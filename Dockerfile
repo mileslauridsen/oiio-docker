@@ -10,4 +10,7 @@ RUN	yum -y clean all && \
 	libtiff pkgconfig jasper libjpeg8 libjpeg-turbo-devel giflib-devel bzip2-devel libwebp-devel \
 	PyOpenGL mesa-libGLw freeglut-devel jasper-devel glew-devel xorg-x11-util-macros && \
 	yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
-	yum -y install OpenColorIO OpenColorIO-tools OpenImageIO-utils python-OpenImageIO
+	yum -y install OpenColorIO OpenColorIO-tools OpenImageIO-utils python-OpenImageIO && \
+	yum -y autoremove && \
+	yum clean all && \
+    rm -rf /var/cache/yum
