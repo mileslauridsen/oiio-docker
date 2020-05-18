@@ -50,8 +50,11 @@ ENV PATH=/usr/bin:$PATH
 ENV HOME  /home/python_user
 ENV PYENV_ROOT $HOME/.pyenv
 ENV PATH $PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH
+ENV PATH /usr/lib64/python2.7/site-packages:$PATH
 ENV PYTHONPATH /usr/lib64/python2.7/site-packages:$PYTHONPATH
 RUN useradd -m python_user
+RUN pip install --upgrade pip
+RUN pip install pyseq pyyaml
 
 WORKDIR /home/python_user
 USER python_user
