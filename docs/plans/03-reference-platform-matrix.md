@@ -71,7 +71,7 @@ OIIO is not part of the platform specification. The starting OIIO pins are the r
 - Build the years in the platform's support window as of 2027-01-01, when this work is expected to land: CY2024–CY2027. Exclude CY2023, which leaves the window on 2027-01-01. Include CY2027 now because it is Final and studios begin targeting it ahead of its effective date.
 - Tag images `algernon_vfx/oiio:cy<year>`. Keep `algernon_vfx/oiio:latest` pointing at the current calendar year's platform: CY2026 until 2027-01-01, then CY2027.
 - The plain `docker build -t algernon_vfx/oiio .` command in the README must keep working. It builds the current year, using defaults from the Dockerfile's build arguments.
-- Use one parameterized Dockerfile. A per-year file under `platforms/`, such as `platforms/cy2026.env`, records the pinned versions, URLs, and checksums. A `docker-bake.hcl` file declares the targets `cy2024` through `cy2027` and a `default` group.
+- Use one parameterized Dockerfile. A per-year lock, `build/locks/cy<year>.json`, records the pinned versions, URLs, and checksums in the format defined by [Phase 4](04-locked-inputs-and-ci.md). A `docker-bake.hcl` file declares the targets `cy2024` through `cy2027` and a `default` group.
 - Keep the non-root `algernon` user and the interactive Bash entry point.
 
 **Platforms and scope**
@@ -90,10 +90,10 @@ OIIO is not part of the platform specification. The starting OIIO pins are the r
 
 - Recheck the matrix against vfxplatform.com and record any changes. CY2027's OCIO, OpenEXR, and OpenVDB confirmations were still pending when the page was read.
 - Check the amd64 repositories for the same packages that were checked on arm64. Confirm that each Rocky release's `gcc-toolset` and runtime packages are available on both architectures.
-- Choose the exact patch release for each "x" version: CPython, Imath, OpenEXR, OCIO, and NumPy. Prefer the newest patch release in the specified series. Record URLs and SHA-256 checksums in the `platforms/` files.
+- Choose the exact patch release for each "x" version: CPython, Imath, OpenEXR, OCIO, and NumPy. Prefer the newest patch release in the specified series. Record URLs and SHA-256 checksums in the `build/locks/` files.
 - Check each OIIO starting pin against its release's documented minimum and maximum dependency versions. Identify the Python binding library it needs (pybind11, or whatever later releases use instead), and pin that too.
 - Identify the dependencies that OCIO and OpenEXR fetch for themselves, and decide for each whether to pin it explicitly or record the version the project fetches.
-- Completion evidence: complete `platforms/cy<year>.env` files, with the checks and choices recorded in the implementation log.
+- Completion evidence: complete `build/locks/cy<year>.json` files, with the checks and choices recorded in the implementation log.
 
 ### 2. Build The Current Year End To End
 
@@ -136,7 +136,7 @@ OIIO is not part of the platform specification. The starting OIIO pins are the r
 
 ## Validation
 
-Run all of the [Phase 2 checks](02-build-verification.md#validation) against each `algernon_vfx/oiio:cy<year>` image on each architecture. Add a scripted year verification (planned as `scripts/verify_platform.sh <year>`) that fails on any mismatch with that year's `platforms/` file:
+Run all of the [Phase 2 checks](02-build-verification.md#validation) against each `algernon_vfx/oiio:cy<year>` image on each architecture. Add a scripted year verification (planned as `scripts/validate_image.py`, which [Phase 4](04-locked-inputs-and-ci.md) extends) that fails on any mismatch with that year's lock:
 
 - `oiiotool --version` equals the pinned OIIO version.
 - `python3 --version` equals the pinned CPython version, and `numpy.__version__` equals the pinned NumPy version.

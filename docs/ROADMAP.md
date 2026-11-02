@@ -7,6 +7,7 @@ This is the high-level direction for oiio-docker. Detailed execution belongs in 
 - [Phase 1: Project playbook](plans/01-project-playbook.md): establish project orientation, workflow, and planning documents.
 - [Phase 2: Build verification](plans/02-build-verification.md): record whether the legacy CY2021 recipe builds and runs, and establish the validation checks that later phases reuse.
 - [Phase 3: Reference platform build matrix](plans/03-reference-platform-matrix.md): build and verify one small image per supported VFX Reference Platform year (CY2024–CY2027) from clean Rocky Linux bases, then retire the CY2021 recipe.
+- [Phase 4: Locked inputs and automated verification](plans/04-locked-inputs-and-ci.md): apply ffmpeg-docker's source and toolchain locks, image checks, size budgets, reproducibility checks, and GitHub Actions CI to the year-by-architecture matrix.
 
 ## Current Direction
 
@@ -34,6 +35,7 @@ build: define compatibility -> inspect dependencies -> build -> inspect tools an
 | 1. Project playbook | complete | [Plan](plans/01-project-playbook.md) | Project guidance, workflow, mission, roadmap, plans, and log adopted. |
 | 2. Build verification | planned | [Plan](plans/02-build-verification.md) | A recorded legacy baseline and reusable build and runtime checks. |
 | 3. Reference platform build matrix | planned | [Plan](plans/03-reference-platform-matrix.md) | Small, verified `cy2024`–`cy2027` images on Rocky Linux for amd64 and arm64, matching each year's platform versions; CY2021 recipe retired. |
+| 4. Locked inputs and automated verification | planned | [Plan](plans/04-locked-inputs-and-ci.md) | Locked sources, RPMs, and toolchain; contract, contents, size, and reproducibility checks; hosted CI over all 8 year/architecture images. |
 
 ## Assumptions
 

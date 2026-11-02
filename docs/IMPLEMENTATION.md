@@ -2,6 +2,43 @@
 
 Record decisions that change project direction, specifications, runtime behavior, tests, validation, dependencies, deployment, or architecture. Link to plans rather than duplicating their details.
 
+## 2026-11-01: Plan Locked Inputs And CI
+
+Request:
+
+- Plan the GitHub Actions workflow and the other build checks used in ffmpeg-docker, for this repository.
+
+Decision:
+
+- Add [Phase 4](plans/04-locked-inputs-and-ci.md). It adapts ffmpeg-docker's verified pattern to this repository's year-by-architecture matrix:
+  - source and toolchain locks, with checksums verified before extraction;
+  - a locked package closure, using Rocky RPMs in place of Debian APT packages;
+  - image identity, linkage, and contents validation;
+  - an image-format support contract with deterministic fixtures;
+  - license collection and per-image size budgets;
+  - cold reproducibility checks;
+  - a pinned GitHub Actions workflow on native amd64 and arm64 runners.
+- Use one lock per year, `build/locks/cy<year>.json`. Phase 3 now records its pins there and names its check `scripts/validate_image.py`, so Phase 4 needs no file migration.
+- Record the gaps that differ from ffmpeg-docker:
+  - Rocky has no package snapshot service;
+  - CY2027 needs an x86-64-v2 floor;
+  - Python bytecode must be made deterministic;
+  - the GitHub Actions cache limit applies across eight image jobs.
+- Hosted CI waits until the user chooses to push. The repository is local-only for now.
+
+Affected areas:
+
+- The Phase 3 and Phase 4 plans, the roadmap, and this log. Build and runtime behavior are unchanged.
+
+Validation:
+
+- Reviewed ffmpeg-docker's workflow, its locks and their supporting scripts, its build environment and provenance documents, and its Phase 3 plan and log.
+- Documentation checks only. Nothing was built.
+
+Follow-up:
+
+- Carry out Phase 4 alongside Phase 3, starting with the CY2026 lock and fetch helper.
+
 ## 2026-11-01: Plan Reference Platform Build Matrix
 
 Request:
