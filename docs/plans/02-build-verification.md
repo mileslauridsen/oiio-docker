@@ -14,10 +14,41 @@ Establish and document a working build and runtime baseline for the OIIO image, 
   - It builds with `make && make install`.
 - The configured `pybind11_DIR` refers to `/home/python_user`, which the Dockerfile never creates. The build runs as root, while the working directory belongs to `build_user`. Whether CMake ignores, falls back from, or fails on this path is unknown.
 - Runtime stage: based on `centos:centos7`. It copies `/bin`, `/usr/lib`, `/usr/lib64`, `/usr/bin`, `/usr/include`, `/usr/share`, and the `/usr/local` subtrees from the compile stage over the CentOS base. It also copies the OIIO build's `bin` directory into `/usr/local/bin` and switches to the user `algernon`.
-- Nothing has yet verified any of the following:
-  - that the runtime image finds OIIO's shared libraries;
-  - that the runtime `python3` has a version that matches the installed `OpenImageIO` module;
-  - that `PyOpenColorIO` is importable.
+- Before this phase, nothing had verified that the runtime image finds OIIO's shared libraries, that its `python3` matches the installed `OpenImageIO` module, or that `PyOpenColorIO` imports.
+
+### Results (2026-11-01)
+
+The full evidence is in the [implementation log](../IMPLEMENTATION.md).
+
+**Environment**
+
+- Host: Apple M5 Pro running Docker 29.9.2 with a `linux/arm64` engine, and Buildx 0.38.1.
+- Target: `linux/amd64` under emulation. `aswf/ci-vfxall:2021-clang10.5` is amd64-only.
+- Build base digest: `sha256:ad684a8b099d65a44d2bacb1a54cf9f6d29924705606fa122d34ef2f3d75a1ab`. Runtime `centos:centos7` index digest: `sha256:be65f488b7764ad3638f236b7b515b3678369a5124c47b8d32916d6487418ea4`.
+
+**Build attempts**
+
+1. The unmodified recipe failed. OIIO `main` (`d1ca012b11b9`) builds pybind11 v3.0.1, which requires Python 3.8 or newer. The image has Python 3.7.9.
+2. Pinned to OIIO `v2.2.10.1` (`d51b7b3b34c7`), the build succeeded. This is the patch release of the OIIO 2.2.10 that the base image already ships, alongside OCIO 2.0.0 and OpenEXR 2.5.
+   - OIIO's own script built pybind11 2.4.3, and that is the copy OIIO used. The `/home/python_user` path is ignored.
+   - Configure also git-cloned fmt and robin-map without pinning them.
+
+**Runtime**
+
+- `python3` failed to load `libpython3.7m.so.1.0`. The runtime stage did not carry over the base image's `LD_LIBRARY_PATH` and `PYTHONPATH`. Setting both to their `/usr/local` values fixed it.
+- The verified image is `algernon_vfx/oiio:legacy-cy2021-amd64`: image ID `sha256:8fbdc0c96915aba134fe4876250e72a3346abed226ecd34a143e2a273afb206b`, 1,546,593,927 bytes. It runs CentOS 7.9 with glibc 2.17.
+- Passed:
+  - `oiiotool`, `iinfo`, and `maketx` start;
+  - `OpenImageIO` 2.2.10 and `PyOpenColorIO` 2.0.0 import;
+  - the half-float EXR round trip, the tiled MIP-mapped `maketx` texture, and the Python read;
+  - writes to a mounted directory as `algernon`;
+  - running `bash` inside the image;
+  - the README's interactive `-it` session, which opened a prompt as `algernon` on `/dev/pts/0` when run through a pseudo-terminal.
+- OIIO 2.2 has no `oiiotool --version`. Its version is read from the `--help` banner.
+
+**Not checked**
+
+- `arm64`, because no arm64 build base exists for CY2021.
 
 ## Decisions And Boundaries
 
@@ -97,6 +128,6 @@ The `iinfo` and Python output should report a 128x128, three-channel, half-float
 
 ## Status
 
-Status: planned
+Status: complete. All acceptance criteria are met on `linux/amd64`.
 
 Last updated: 2026-11-01

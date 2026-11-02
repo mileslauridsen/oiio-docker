@@ -11,7 +11,7 @@ This is the high-level direction for oiio-docker. Detailed execution belongs in 
 
 ## Current Direction
 
-- The project playbook is adopted. Next comes Phase 2: measure the existing recipe and establish the validation checks. Phase 3 then replaces the single CY2021 image with a matrix aligned to the VFX Reference Platform support window.
+- The project playbook is adopted, and Phase 2 is complete: the legacy CY2021 image builds for amd64 with OIIO pinned and passes the runtime checks. Next, Phase 3 replaces the single CY2021 image with a matrix aligned to the VFX Reference Platform support window.
 - Static inspection of the recipe points to several likely problems; none has been demonstrated by a build:
   - The runtime base `centos:centos7` reached end of life in June 2024, and its package mirrors moved to vault.
   - OIIO is cloned from its moving default branch with no pinned release.
@@ -33,7 +33,7 @@ build: define compatibility -> inspect dependencies -> build -> inspect tools an
 | Phase | Status | Plan | Outcome |
 | --- | --- | --- | --- |
 | 1. Project playbook | complete | [Plan](plans/01-project-playbook.md) | Project guidance, workflow, mission, roadmap, plans, and log adopted. |
-| 2. Build verification | planned | [Plan](plans/02-build-verification.md) | A recorded legacy baseline and reusable build and runtime checks. |
+| 2. Build verification | complete | [Plan](plans/02-build-verification.md) | The legacy amd64 image builds with OIIO pinned to 2.2.10.1 and, after a library-path fix, passes all runtime checks, including the interactive shell. |
 | 3. Reference platform build matrix | planned | [Plan](plans/03-reference-platform-matrix.md) | Small, verified `cy2024`–`cy2027` images on Rocky Linux for amd64 and arm64, matching each year's platform versions; CY2021 recipe retired. |
 | 4. Locked inputs and automated verification | planned | [Plan](plans/04-locked-inputs-and-ci.md) | Locked sources, RPMs, and toolchain; contract, contents, size, and reproducibility checks; hosted CI over all 8 year/architecture images. |
 

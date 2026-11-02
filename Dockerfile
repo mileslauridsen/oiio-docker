@@ -6,8 +6,9 @@ RUN pip install "pybind11" && \
 RUN useradd -m build_user
 WORKDIR /home/build_user
 
-RUN git clone https://github.com/OpenImageIO/oiio.git && \
+RUN git clone --branch v2.2.10.1 --depth 1 https://github.com/AcademySoftwareFoundation/OpenImageIO.git oiio && \
     cd oiio && \
+    test "$(git rev-parse HEAD)" = "d51b7b3b34c75d76a5f9620ee7160e56eec6677c" && \
     sh ./src/build-scripts/build_pybind11.bash && \
     mkdir build && \
     cd build && \
@@ -31,6 +32,8 @@ COPY --from=compile-image /usr/local/lib /usr/local/lib
 COPY --from=compile-image /home/build_user/oiio/build/bin /usr/local/bin
 
 ENV PATH=/usr/bin:/usr/local/bin:$PATH
+ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64
+ENV PYTHONPATH=/usr/local/lib/python3.7/site-packages:/usr/local/lib64/python3.7/site-packages
 
 RUN useradd -m algernon
 USER algernon

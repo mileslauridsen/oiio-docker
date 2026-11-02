@@ -2,6 +2,49 @@
 
 Record decisions that change project direction, specifications, runtime behavior, tests, validation, dependencies, deployment, or architecture. Link to plans rather than duplicating their details.
 
+## 2026-11-01: Verify Legacy CY2021 Build
+
+Request:
+
+- Start Phase 2: record the legacy build and runtime baseline.
+
+Decision:
+
+- Build only for `linux/amd64`. `aswf/ci-vfxall:2021-clang10.5` (`sha256:ad684a8b099d65a44d2bacb1a54cf9f6d29924705606fa122d34ef2f3d75a1ab`) is amd64-only. On an arm64 host, the README's platform-less build would resolve the runtime base `centos:centos7` (`sha256:be65f488b7764ad3638f236b7b515b3678369a5124c47b8d32916d6487418ea4`) as arm64, and copy amd64 binaries into it. The README now names the platform.
+- The unmodified recipe failed. It cloned OIIO `main` at `d1ca012b11b9b00b04c2c0edfce9ae164ee84f17`, whose `build_pybind11.bash` builds pybind11 v3.0.1. pybind11's configure step rejected Python 3.7.9 because it requires at least 3.8.
+- Pin the clone to OIIO `v2.2.10.1` from the AcademySoftwareFoundation repository, and verify commit `d51b7b3b34c75d76a5f9620ee7160e56eec6677c`.
+  - The base image already ships OIIO 2.2.10, OCIO 2.0.0, OpenEXR and Imath 2.5, gcc 9.3.1, CMake 3.19.3, and Python 3.7.9, on CentOS 7.8 with glibc 2.17. This patch release matches the stack the image was built for.
+  - With the pin, the build succeeded. The OIIO compile step took 735 s under emulation.
+- Set `LD_LIBRARY_PATH` and `PYTHONPATH` in the runtime stage. The image's `python3` could not load `libpython3.7m.so.1.0`, because the runtime stage did not carry over these variables from the base image. `oiiotool` worked without them only because its RPATH includes `/usr/local/lib` and `/usr/local/lib64`.
+- Leave the ineffective `pybind11_DIR` path and the other legacy behavior unchanged. Phase 3 replaces this recipe.
+
+Affected areas:
+
+- Dockerfile: OIIO pin and commit check, plus the runtime library and Python paths.
+- README build commands, the Phase 2 plan results, the roadmap, and this log.
+
+Validation:
+
+- Recorded the host and toolchain: Docker 29.9.2 with a `linux/arm64` engine, Buildx 0.38.1, 18 CPUs, and about 8.3 GB of memory available to Docker.
+- Image `algernon_vfx/oiio:legacy-cy2021-amd64`: ID `sha256:8fbdc0c96915aba134fe4876250e72a3346abed226ecd34a143e2a273afb206b`, 1,546,593,927 bytes, amd64, user `algernon` (uid 1000). Runtime is CentOS 7.9 with glibc 2.17.
+- `oiiotool --help` reports OIIO 2.2.10, built for SSE2, with dependent libraries including OpenEXR 2.5.2, OpenVDB 8.0.0, Ptex, LibRaw 0.19.4, and libtiff 4.0.3. OIIO 2.2 rejects `--version`.
+- `iinfo` and `maketx` are on `PATH`, and `ldd` reports no missing libraries for `oiiotool`.
+- Python imports `OpenImageIO` 2.2.10 (from `/usr/local/lib64/python3.7/site-packages`) and `PyOpenColorIO` 2.0.0.
+- In a mounted scratch directory:
+  - `oiiotool --pattern checker 128x128 3 -d half` wrote an EXR that `iinfo` reports as 128×128, three channels, half-float;
+  - `maketx` produced a 64×64-tiled, float, MIP-mapped TIFF texture;
+  - Python read the EXR as `128 128 3 half`.
+- `bash` ran inside the image. The README's `docker run -it --platform linux/amd64 --entrypoint=bash` session opened a prompt as `algernon` on `/dev/pts/0` and exited 0. Neither the agent shell nor the user's `!` prompt has a TTY, so the session ran through macOS `script` as a pseudo-terminal.
+- Phase 2 acceptance criteria are met, and the phase is complete.
+
+Follow-up:
+
+- Phase 3 and Phase 4 notes from these results:
+  - `oiiotool --version` is unavailable in OIIO 2.2, so confirm the version check against each year's OIIO release.
+  - The legacy configure step fetched fmt and robin-map from the network.
+  - `oiiotool` carries a leftover build-directory RPATH.
+  - The image is 1.55 GB, which sets the size baseline that Phase 3 should shrink.
+
 ## 2026-11-01: Plan Locked Inputs And CI
 
 Request:

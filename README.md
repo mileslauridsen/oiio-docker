@@ -2,10 +2,12 @@
 Installation of OIIO and OCIO for use in a VFX pipeline.
 
 ## Building with docker
-```docker build -t algernon_vfx/oiio .```
+The CY2021 build image is published for `linux/amd64` only, so name the platform explicitly. On an arm64 host such as Apple silicon, this runs under emulation:
+
+```docker build --platform linux/amd64 -t algernon_vfx/oiio .```
 
 ## Running image in an interactive bash shell
-```docker run -it --entrypoint='bash' algernon_vfx/oiio```
+```docker run -it --platform linux/amd64 --entrypoint='bash' algernon_vfx/oiio```
 
 ## Project documentation
 
