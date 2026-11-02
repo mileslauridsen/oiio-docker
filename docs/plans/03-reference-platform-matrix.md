@@ -168,6 +168,10 @@ Build commands name the platform explicitly, for example `docker buildx bake --s
 Status: in progress.
 
 - Steps 1 and 2 are complete for CY2026. `algernon_vfx/oiio:cy2026` builds for `linux/amd64` and `linux/arm64` from [build/locks/cy2026.json](../../build/locks/cy2026.json) and passes all 35 validator checks on both. The results are in the [implementation log](../IMPLEMENTATION.md).
-- Step 3 (CY2024, CY2025, and CY2027) has not started.
+- Step 3 is in progress. `algernon_vfx/oiio:cy2027` builds for both architectures from [build/locks/cy2027.json](../../build/locks/cy2027.json) and passes all 35 validator checks. CY2026 was rebuilt and re-validated after the Dockerfile changes CY2027 needed. CY2024 and CY2025 have not started.
+- CY2027 deviations from this plan, recorded in the [implementation log](../IMPLEMENTATION.md):
+  - OIIO 3.2 builds its Python bindings with nanobind, its new default, instead of pybind11.
+  - OIIO 3.2 defaults amd64 SIMD to SSE4.2 (x86-64-v2), which Rocky Linux 9 already requires.
+  - OCIO 2.6's default built-in config is ACES 2.1. The ACES 2.0 built-in configs that CY2027 specifies are still included.
 
-Last updated: 2026-11-01
+Last updated: 2026-11-02

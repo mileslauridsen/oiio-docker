@@ -20,3 +20,18 @@ target "cy2026" {
   tags      = ["algernon_vfx/oiio:cy2026", "algernon_vfx/oiio:latest"]
   platforms = ["linux/amd64", "linux/arm64"]
 }
+
+target "cy2027" {
+  dockerfile = "Dockerfile"
+  target     = "runtime-image"
+  args = {
+    PLATFORM_YEAR      = "cy2027"
+    BUILDER_IMAGE      = "rockylinux/rockylinux:9.8@sha256:8101994123cf3d0a8fee517bee7f39e555c7d92bd2d9eb3303cc988a0eeed00f"
+    RUNTIME_IMAGE      = "rockylinux/rockylinux:9.8-minimal@sha256:e1d0a9f5ed99d52e7faf03afe7ee32e48b231c4dd9586808b3d1aedf894dff04"
+    GCC_TOOLSET        = "14"
+    CXX_STANDARD       = "20"
+    PYTHON_MAJOR_MINOR = "3.13"
+  }
+  tags      = ["algernon_vfx/oiio:cy2027"]
+  platforms = ["linux/amd64", "linux/arm64"]
+}

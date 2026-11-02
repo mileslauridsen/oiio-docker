@@ -112,10 +112,11 @@ RUN --network=none cd /src/imath && \
     cmake --build build -j${BUILD_JOBS} && \
     cmake --install build
 
-# Install OpenEXR with its vendored libdeflate and OpenJPH
+# Install OpenEXR with its vendored libdeflate, OpenJPH, and (3.5 and later) zstd
 RUN --network=none cd /src/openexr && \
     vfx-cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/opt/vfx -DBUILD_TESTING=OFF -DOPENEXR_BUILD_TOOLS=OFF \
-        -DOPENEXR_BUILD_EXAMPLES=OFF -DOPENEXR_FORCE_INTERNAL_DEFLATE=ON -DOPENEXR_FORCE_INTERNAL_OPENJPH=ON && \
+        -DOPENEXR_BUILD_EXAMPLES=OFF -DOPENEXR_FORCE_INTERNAL_DEFLATE=ON -DOPENEXR_FORCE_INTERNAL_OPENJPH=ON \
+        -DOPENEXR_FORCE_INTERNAL_ZSTD=ON && \
     cmake --build build -j${BUILD_JOBS} && \
     cmake --install build
 
@@ -131,7 +132,7 @@ RUN --network=none cd /src/expat && \
 RUN --network=none cd /src/yaml-cpp && \
     vfx-cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/opt/deps -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
         -DYAML_BUILD_SHARED_LIBS=OFF -DYAML_CPP_BUILD_TESTS=OFF -DYAML_CPP_BUILD_TOOLS=OFF \
-        -DYAML_CPP_BUILD_CONTRIB=OFF && \
+        -DYAML_CPP_BUILD_CONTRIB=OFF -DYAML_CPP_FORMAT_SOURCE=OFF && \
     cmake --build build -j${BUILD_JOBS} && \
     cmake --install build
 
@@ -145,7 +146,7 @@ RUN --network=none cd /src/pystring && \
 # Install minizip-ng (static, zlib only, for OCIO)
 RUN --network=none cd /src/minizip-ng && \
     vfx-cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/opt/deps -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-        -DBUILD_SHARED_LIBS=OFF -DMZ_COMPAT=OFF -DMZ_ZLIB=ON -DMZ_BZIP2=OFF -DMZ_LZMA=OFF -DMZ_ZSTD=OFF \
+        -DBUILD_SHARED_LIBS=OFF -DMZ_COMPAT=OFF -DMZ_ZLIB=ON -DMZ_BZIP2=OFF -DMZ_LZMA=OFF -DMZ_PPMD=OFF -DMZ_ZSTD=OFF \
         -DMZ_LIBCOMP=OFF -DMZ_OPENSSL=OFF -DMZ_LIBBSD=OFF -DMZ_ICONV=OFF -DMZ_PKCRYPT=OFF -DMZ_WZAES=OFF \
         -DMZ_FETCH_LIBS=OFF -DZLIB_ROOT=/opt/vfx && \
     cmake --build build -j${BUILD_JOBS} && \
@@ -179,15 +180,29 @@ RUN --network=none cd /src/fmt && \
     vfx-cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/opt/deps && \
     cmake --install build
 
-# Install OpenImageIO with only the tools, Python bindings, and image-format plugins in scope
-RUN --network=none cd /src/openimageio && \
-    vfx-cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/opt/vfx -DOIIO_BUILD_TESTS=OFF -DOIIO_BUILD_TOOLS=ON \
+# Install nanobind for OIIO 3.2 and later, using the locked robin-map instead of its git submodule
+RUN --network=none if [ -d /src/nanobind ]; then \
+        cd /src/nanobind && \
+        vfx-cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/opt/deps -DNB_TEST=OFF -DNB_CREATE_INSTALL_RULES=ON \
+            -DNB_USE_SUBMODULE_DEPS=OFF -DPython_EXECUTABLE=/opt/vfx/bin/python3 && \
+        cmake --install build; \
+    fi
+
+# Install OpenImageIO with only the tools, Python bindings, and image-format plugins in scope.
+# OIIO 3.2 and later build nanobind bindings; earlier releases use pybind11.
+RUN --network=none set -eu; \
+    BINDINGS=""; \
+    if [ -d /opt/deps/nanobind ]; then \
+        BINDINGS="-DOIIO_PYTHON_BINDINGS_BACKEND=nanobind -Dnanobind_DIR=/opt/deps/nanobind/cmake"; \
+    fi; \
+    cd /src/openimageio && \
+    vfx-cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/opt/vfx -DOIIO_BUILD_TESTS=OFF -DOIIO_BUILD_TOOLS=ON $BINDINGS \
         -DBUILD_DOCS=OFF -DINSTALL_DOCS=OFF -DINSTALL_FONTS=OFF -DOIIO_DOWNLOAD_MISSING_TESTDATA=OFF \
         -DUSE_PYTHON=ON -DPYTHON_VERSION=${PYTHON_MAJOR_MINOR} -DPython_EXECUTABLE=/opt/vfx/bin/python3 \
         -DENABLE_Freetype=OFF -DENABLE_OpenCV=OFF -DENABLE_TBB=OFF -DENABLE_DCMTK=OFF -DENABLE_FFmpeg=OFF \
         -DENABLE_GIF=OFF -DENABLE_Libheif=OFF -DENABLE_LibRaw=OFF -DENABLE_OpenJPEG=OFF -DENABLE_openjph=OFF \
         -DENABLE_OpenVDB=OFF -DENABLE_Ptex=OFF -DENABLE_WebP=OFF -DENABLE_JXL=OFF -DENABLE_libuhdr=OFF \
-        -DENABLE_libdeflate=OFF -DENABLE_Nuke=OFF -DENABLE_BZip2=OFF -DENABLE_OpenGL=OFF -DENABLE_Qt5=OFF \
+        -DENABLE_libdeflate=OFF -DENABLE_zstd=OFF -DENABLE_Nuke=OFF -DENABLE_BZip2=OFF -DENABLE_OpenGL=OFF -DENABLE_Qt5=OFF \
         -DENABLE_Qt6=OFF -DUSE_QT=OFF -DUSE_R3DSDK=OFF && \
     cmake --build build -j${BUILD_JOBS} && \
     cmake --install build

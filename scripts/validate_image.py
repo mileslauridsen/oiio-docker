@@ -120,9 +120,11 @@ def main():
     simd = re.search(r"HW features enabled at build: (.*)", buildinfo)
     print("INFO OIIO build SIMD: {0}".format(simd.group(1).strip() if simd else "unknown"))
     dependencies = dict(re.findall(r"([A-Za-z][\w-]*) ([\d][\d.]*)", buildinfo.split("Dependencies:", 1)[-1]))
+    # OIIO 3.2 and later bind Python with nanobind; earlier releases use pybind11.
+    bindings = "nanobind" if "nanobind" in pins else "pybind11"
     for reported, pin in (("Imath", "imath"), ("OpenColorIO", "opencolorio"), ("OpenEXR", "openexr"),
                           ("libjpeg-turbo", "libjpeg-turbo"), ("PNG", "libpng"), ("TIFF", "libtiff"),
-                          ("ZLIB", "zlib"), ("fmt", "fmt"), ("pybind11", "pybind11"), ("Python3", "cpython")):
+                          ("ZLIB", "zlib"), ("fmt", "fmt"), (bindings, bindings), ("Python3", "cpython")):
         check.expect("OIIO built with {0}".format(reported), dependencies.get(reported), pins[pin])
     check.expect("python version", check.docker("python3", "--version").strip().split()[1], pins["cpython"])
     probe = (

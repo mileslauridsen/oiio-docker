@@ -2,6 +2,58 @@
 
 Record decisions that change project direction, specifications, runtime behavior, tests, validation, dependencies, deployment, or architecture. Link to plans rather than duplicating their details.
 
+## 2026-11-02: Build And Verify CY2027 On Rocky Linux 9
+
+Request:
+
+- Continue Phase 3 Step 3 with the next platform year.
+
+Decision:
+
+- Start Step 3 with CY2027. It shares CY2026's compiler and Python, so it isolates the Rocky Linux 9 base and the newer library series.
+- Recheck vfxplatform.com on 2026-11-02 (page last modified 2026-10-17). CY2027 is unchanged: glibc 2.34, gcc 14.2, C++20, Python 3.13, NumPy 2.4, OCIO 2.6, OpenEXR 3.5, Imath 3.2, and ACES 2.0.
+- Pinned bases: `rockylinux/rockylinux:9.8` (`sha256:81019941…eed00f`) and `9.8-minimal` (`sha256:e1d0a9f5…ff04`). Rocky 9.8 provides `gcc-toolset-14` 14.2.1-13 and CMake 3.31.8. The builder includes Python and `find`, and the minimal image provides the runtime libraries.
+- Lock 19 source archives and 2 wheels in [build/locks/cy2027.json](../build/locks/cy2027.json):
+  - Newest patch releases: OCIO 2.6.0, OpenEXR 3.5.3, NumPy 2.4.6 (`manylinux_2_28` wheels), and OIIO 3.2.2.0 (ASWF's reference pin is 3.2.1.1). CPython 3.13.18 and Imath 3.2.3 are unchanged.
+  - OCIO 2.6's recommended versions: zlib 1.3.2, yaml-cpp 0.9.0, and minizip-ng 4.2.2. pystring 1.1.4, pybind11 3.0.1, and the `sse2neon` commit are unchanged. expat is 2.8.5, one patch newer than the recommended 2.8.4.
+  - OIIO 3.2's defaults: libpng 1.6.58, robin-map 1.4.1, and nanobind 2.13.0. fmt, libjpeg-turbo, and libtiff are unchanged.
+- OIIO 3.2 builds its Python bindings with nanobind by default and calls pybind11 the legacy backend. Use nanobind, installed from its locked source against the locked robin-map rather than its git submodule. OCIO still uses pybind11.
+- Make the Dockerfile serve both years. Releases that do not use the new options ignore them, so each year's own build is unchanged:
+  - the nanobind step runs only when the lock includes nanobind, and the OIIO step selects nanobind only when it is installed;
+  - add `OPENEXR_FORCE_INTERNAL_ZSTD=ON` (OpenEXR 3.5 adds zstd), `MZ_PPMD=OFF` (new in minizip-ng 4.2), `YAML_CPP_FORMAT_SOURCE=OFF`, and OIIO `ENABLE_zstd=OFF`.
+- The validator checks the binding library the lock names: nanobind or pybind11.
+- Keep OIIO 3.2's new amd64 default, SSE4.2 (x86-64-v2). OIIO 3.1 used SSE2 under the same flags. Rocky Linux 9 already requires x86-64-v2 hardware, so CY2027 gains no new hardware requirement. The other components still compile for generic x86-64.
+
+Affected areas:
+
+- `Dockerfile`, `docker-bake.hcl` (target `cy2027`), `build/locks/cy2027.json`, `build/image-size-budgets.json`, `scripts/validate_image.py`, the README, the Phase 3 plan, the roadmap, and this log.
+
+Validation:
+
+- arm64 builds natively; amd64 builds under emulation in about 13 minutes. The amd64 strip step stripped 102 ELF files.
+- `scripts/validate_image.py` passed all 35 checks on both images:
+  - `cy2027-amd64`: `sha256:cd7916a856d32423cc205a12f70b8e1206d21e4cb80503b37014e33cb28447dc`, 422,629,705 bytes.
+  - `cy2027-arm64`: `sha256:ed1aef13e2d1c322632de80a735d8d83d7022415a869a2ef69f95a60aee12f62`, 437,070,594 bytes.
+- What the checks confirmed:
+  - `oiiotool --buildinfo` reports OIIO 3.2.2.0 with gcc 14.2 and C++20, plus Imath 3.2.3, OCIO 2.6.0, OpenEXR 3.5.3, libjpeg-turbo 3.1.2, PNG 1.6.58, TIFF 4.7.1, zlib 1.3.2, fmt 12.1.0, nanobind 2.13.0, and Python 3.13.18.
+  - NumPy is 2.4.6, and the runtime glibc is 2.34.
+  - The highest symbol versions required are `GLIBC_2.34` and `GLIBCXX_3.4.29`. `GLIBCXX_3.4.29` is the most Rocky 9's `libstdc++` provides, so CY2027 has no headroom on that check.
+  - Every ELF file resolves its libraries, and no excluded libraries are present.
+  - Image I/O, `maketx`, the NumPy read, and the OCIO ACES conversion pass.
+- OCIO 2.6's default built-in config is `cg-config-v5.0.0_aces-v2.1_ocio-v2.6` (ACES 2.1). The ACES 2.0 configs CY2027 specifies, `cg-config-v4.0.0_aces-v2.0_ocio-v2.5` and `studio-config-v4.0.0_aces-v2.0_ocio-v2.5`, are still built in and load by name.
+- The images are about 100 MB larger than CY2026. `/opt/vfx` grew only from 140 MB to 145 MB. The rest is the base: Rocky 9.8 minimal is 242 MB with 121 packages, against 147 MB with 95 packages for Rocky 8.10 minimal. The budgets are about 5% above the measured sizes.
+- CY2026 rebuilt with the shared Dockerfile changes (arm64 in 160 s, amd64 in 375 s, from cache up to OpenEXR) and passed all 35 checks again at the same sizes:
+  - `cy2026-amd64`: `sha256:56458cadbf4334e67d067fc93fef65df42af14f13225917d6d47b09329274f30`, 332,072,890 bytes.
+  - `cy2026-arm64`: `sha256:0753e4bcc289be59a238db762f22025aa1e51aedd044eea608deb8106213bacd`, 335,312,937 bytes.
+
+Follow-up:
+
+- Phase 3 Step 3: CY2024 and CY2025, with `gcc-toolset-11` and C++17.
+- Decide whether `docs/PLATFORMS.md` should point CY2027 users at the ACES 2.0 built-in config by name.
+- For Phase 4:
+  - CPU baseline: amd64 CY2027 OIIO targets x86-64-v2, while CY2026 OIIO targets SSE2.
+  - OCIO's NEON path on arm64 is still not enabled.
+
 ## 2026-11-01: Build And Verify CY2026 On Rocky Linux
 
 Request:
