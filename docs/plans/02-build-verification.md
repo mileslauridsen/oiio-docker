@@ -25,8 +25,9 @@ Establish and document a working build and runtime baseline for the OIIO image, 
 - Preserve the `algernon_vfx/oiio` tag, the interactive Bash entry point, and the non-root runtime user unless the plan records a deliberate revision.
 - Diagnose build failures in order. Record every change to source locations, versions, base images, and runtime dependencies together with its evidence.
 - Pin the OIIO source to a recorded release tag or commit before claiming that a build succeeded. A build of a moving branch is not a baseline.
+- CY2021 is outside the VFX Reference Platform support window, and [Phase 3](03-reference-platform-matrix.md) replaces this recipe. Fix only what is needed to record a baseline and prove the validation checks. Leave base-image and OIIO-version replacements to Phase 3.
 - Defer the following to a later phase:
-  - moving to a newer VFX Reference Platform year;
+  - moving to a newer VFX Reference Platform year (Phase 3);
   - registry publication;
   - GPU or OSL integration;
   - general pipeline orchestration.

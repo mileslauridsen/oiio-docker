@@ -2,6 +2,39 @@
 
 Record decisions that change project direction, specifications, runtime behavior, tests, validation, dependencies, deployment, or architecture. Link to plans rather than duplicating their details.
 
+## 2026-11-01: Plan Reference Platform Build Matrix
+
+Request:
+
+- Plan builds that align with each VFX Reference Platform year listed on vfxplatform.com.
+
+Decision:
+
+- Add [Phase 3](plans/03-reference-platform-matrix.md), which plans one image per year for CY2024–CY2027. This is the support window as of 2027-01-01. CY2023 is excluded because it leaves the window then.
+- Do not use ASWF build images. An ASWF `aswf/ci-oiio` approach was drafted first and rejected at the user's direction, in favor of clean, small images built from Rocky Linux as the platform specifies. Rejecting it also removes the 3.5–4.8 GB build images and the amd64-only restriction those images impose.
+- Use Rocky Linux 8 for CY2024–CY2026 and Rocky Linux 9 for CY2027, matching each year's glibc floor, with Rocky's `gcc-toolset-11` or `gcc-toolset-14` compiler.
+- Build CPython, Imath, OpenEXR, OCIO, and OIIO from checksum-verified sources, and install NumPy from pinned wheels. Leave out platform components that OIIO does not need.
+- Target `linux/amd64` and `linux/arm64`. Tag images `cy<year>`, with `latest` tracking the current calendar year. Retire the CY2021 recipe after the matrix is verified.
+- Start from the OIIO release ASWF pins for each year (2.5.19.1, 3.1.6.2, 3.1.18.1, and 3.2.1.1) as a compatibility reference only.
+- Narrow Phase 2 to a legacy baseline plus reusable checks, so that it does not duplicate Phase 3's modernization.
+
+Affected areas:
+
+- Phase 2 and Phase 3 plans, the roadmap, and this log. Build and runtime behavior are unchanged.
+
+Validation:
+
+- Read vfxplatform.com (page last modified 2026-10-17) for the specified versions.
+- Read ASWF `versions.yaml` from aswf-docker `main` for the OIIO reference pins.
+- Confirmed with `git ls-remote` that the OIIO and OCIO release tags exist upstream.
+- Ran `linux/arm64` containers from `rockylinux/rockylinux:8` (8.10) and `rockylinux/rockylinux:9` (9.8) to record glibc and the available `gcc-toolset`, Python, and NumPy packages; see the plan for the results.
+- The amd64 repositories were not checked. Nothing was built.
+
+Follow-up:
+
+- Carry out Phase 2, then Phase 3 starting with the CY2026 target.
+- Recheck CY2027's pending component confirmations before claiming CY2027 compliance.
+
 ## 2026-11-01: Adopt Project Playbook
 
 Request:
