@@ -1,13 +1,42 @@
 # oiio-docker
-Installation of OIIO and OCIO for use in a VFX pipeline.
+Installation of OIIO and OCIO for use in a VFX pipeline, built to match the [VFX Reference Platform](https://vfxplatform.com/#reference-platform).
+
+The current image targets **CY2026**:
+
+- Rocky Linux 8 (glibc 2.28), gcc 14.2, and C++20;
+- Python 3.13 with NumPy 2.3;
+- OpenColorIO 2.5, OpenEXR 3.4, and Imath 3.2;
+- OpenImageIO 3.1.
+
+It is built for `linux/amd64` and `linux/arm64`. Versions and checksums are locked in [build/locks/cy2026.json](build/locks/cy2026.json).
 
 ## Building with docker
-The CY2021 build image is published for `linux/amd64` only, so name the platform explicitly. On an arm64 host such as Apple silicon, this runs under emulation:
+Build for the Docker engine's own platform:
 
-```docker build --platform linux/amd64 -t algernon_vfx/oiio .```
+```docker build -t algernon_vfx/oiio .```
+
+Build one platform explicitly with the bake file (`cy2026` is also tagged `latest`):
+
+```docker buildx bake --set '*.platform=linux/arm64' --load cy2026```
+
+Use `linux/amd64` for the x86-64 image. On an arm64 host such as Apple silicon, it builds under emulation.
 
 ## Running image in an interactive bash shell
-```docker run -it --platform linux/amd64 --entrypoint='bash' algernon_vfx/oiio```
+```docker run -it --entrypoint='bash' algernon_vfx/oiio```
+
+## Validating an image
+```python3 scripts/validate_image.py --image algernon_vfx/oiio:cy2026 --platform linux/arm64 --year cy2026```
+
+The validator checks the image against its lock. It covers:
+
+- tool, library, and Python versions;
+- the glibc and `libstdc++` symbol limits;
+- unresolved libraries and excluded components;
+- EXR, TIFF, PNG, and JPEG round trips, `maketx`, and NumPy reads;
+- an OCIO ACES conversion;
+- the size budget in [build/image-size-budgets.json](build/image-size-budgets.json).
+
+The previous CY2021 recipe remains in [legacy/Dockerfile.cy2021](legacy/Dockerfile.cy2021) until the full platform matrix is verified.
 
 ## Project documentation
 

@@ -2,6 +2,72 @@
 
 Record decisions that change project direction, specifications, runtime behavior, tests, validation, dependencies, deployment, or architecture. Link to plans rather than duplicating their details.
 
+## 2026-11-01: Build And Verify CY2026 On Rocky Linux
+
+Request:
+
+- Start Phase 3, beginning with the CY2026 image built from clean Rocky Linux bases.
+
+Decision:
+
+- Step 1 inputs:
+  - amd64 Rocky packages match arm64: `gcc-toolset-14` is 14.2.1 on Rocky 8.10, CMake is 3.26.5, and glibc is 2.28.
+  - Pinned bases: `rockylinux/rockylinux:8.10` (`sha256:e8a49c54…f2338c6`) and `8.10-minimal` (`sha256:6d2ede10…61c965`).
+  - Each component uses the newest patch release in its specified series: CPython 3.13.18, Imath 3.2.3, OpenEXR 3.4.17, OCIO 2.5.2, and NumPy 2.3.5 (`manylinux_2_28` wheels).
+  - OIIO is 3.1.19.0, the newest 3.1 patch, in place of ASWF's 3.1.18.1.
+- Lock 18 source archives and 2 wheels in [build/locks/cy2026.json](../build/locks/cy2026.json).
+  - Build zlib 1.3.1, libjpeg-turbo 3.1.2, libpng 1.6.50, and libtiff 4.7.1 from source, rather than taking Rocky packages. OIIO 3.1 requires libjpeg-turbo 2.1 or newer, OCIO 2.5 requires zlib 1.2.13 or newer, and Rocky's libtiff would bring in a second `libjpeg.so.62`.
+  - Lock the libraries OCIO would otherwise download (expat 2.7.2, yaml-cpp 0.8.0, pystring 1.1.4, minizip-ng 4.0.10, and `sse2neon` at OCIO's pinned commit), at OCIO's recommended versions, and link them statically.
+  - Lock nasm 3.02, because it is not in Rocky's default repositories.
+  - Use the versions recommended by OIIO for fmt 12.1.0, robin-map 1.4.0, and pybind11 3.0.1.
+- Add `build/fetch_sources.py`, adapted from ffmpeg-docker. It downloads over HTTPS only, checks every SHA-256 before extracting, and selects wheels by platform.
+- Replace the `Dockerfile` with a parameterized Rocky Linux build:
+  - all compile steps run with `--network=none`;
+  - code is compiled for generic x86-64 or ARMv8-A;
+  - everything installs under `/opt/vfx` with an absolute RPATH;
+  - the runtime is the minimal base plus `/opt/vfx`, and creates the `algernon` user directly.
+  - The CY2021 recipe moved to `legacy/Dockerfile.cy2021` until Step 5.
+- Add `docker-bake.hcl` (target `cy2026`, tagged `cy2026` and `latest`), `scripts/validate_image.py`, and `build/image-size-budgets.json`.
+- Fixes found during the build:
+  - The Rocky 8 builder has no `find`, so the strip step had silently stripped nothing. Add `findutils` and make the step fail on pipeline errors.
+  - Drop `-O`/`-OO` bytecode. Together with stripping, this took arm64 from 441 MB to 335 MB.
+  - Correct libtiff's option names to `tiff-cxx` and `tiff-opengl`.
+  - Turn link-time optimization off. On amd64, gcc-toolset-14's `lto1` hit an internal compiler error (`in return_token, at opts-common.cc:2177`) while linking OIIO's pybind11 module. Native arm64 linked successfully with it. Whether emulation causes the crash is unknown.
+
+Affected areas:
+
+- `Dockerfile`, `legacy/Dockerfile.cy2021`, `docker-bake.hcl`, `.dockerignore`, `build/`, `scripts/validate_image.py`, the README, the Phase 3 plan, the roadmap, and this log.
+
+Validation:
+
+- The fetch helper verified all 19 locked inputs for each platform, and rejected a truncated zlib archive before extracting it.
+- The ELF symbol-version parser reports Rocky 8's `libstdc++` as providing up to `GLIBCXX_3.4.25`, which is correct for gcc 8.
+- arm64 builds natively in about 4.5 minutes. amd64 builds under emulation in about 12 minutes.
+- Configure logs confirm every locked dependency was found, every excluded OIIO plugin was disabled, and OpenEXR used vendored OpenJPH 0.31.0.
+- `scripts/validate_image.py` passed all 35 checks on both images:
+  - `cy2026-amd64`: `sha256:46d800002a6a7950c849286953acec85a427c72a6268eb8dc760dd2d27108bf4`, 332,072,890 bytes.
+  - `cy2026-arm64`: `sha256:f08a5c8302548e04519e3c17dd042e9acd57a430c603de155a9ce07301189511`, 335,312,937 bytes.
+- What the checks confirmed:
+  - `oiiotool --buildinfo` reports gcc 14.2 with C++20, plus fmt 12.1.0, Imath 3.2.3, libjpeg-turbo 3.1.2, OCIO 2.5.2, OpenEXR 3.4.17, PNG 1.6.50, pybind11 3.0.1, Python 3.13.18, TIFF 4.7.1, and zlib 1.3.1.
+  - NumPy is 2.3.5, and the runtime glibc is 2.28.
+  - The highest symbol versions required are `GLIBC_2.28` and `GLIBCXX_3.4.22`, both within what the base provides.
+  - Every ELF file resolves its libraries, and no excluded libraries are present.
+  - EXR, TIFF, PNG, and JPEG round trips, `maketx`, and a NumPy read pass.
+  - OCIO's built-in default config is `cg-config-v4.0.0_aces-v2.0_ocio-v2.5`, which provides the ACES 2.0 that CY2026 specifies. An ACES2065-1 to ACEScg conversion succeeds.
+- Size budgets: `docker image inspect .Size` reports only compressed content for a freshly loaded image whose platform differs from the engine's (84 MB for amd64). The validator therefore measures size after running containers. The budgets are about 5% above the measured sizes.
+- The README's plain `docker build` produces a native arm64 image. Its interactive shell runs as `algernon`.
+
+Follow-up:
+
+- Phase 3 Step 3: CY2024, CY2025, and CY2027.
+- For Phase 4:
+  - CPU baselines: amd64 OIIO currently builds `sse2` only, and arm64 builds `neon`.
+  - OCIO ignored `sse2neon_ROOT` on arm64, so its NEON SIMD path is not enabled.
+  - Python bytecode is not yet deterministic.
+  - RPM packages are installed without exact version pins beyond the toolset.
+  - The plain `docker build` and `buildx --load` produce different image IDs from identical cached layers.
+  - Publisher signatures are not yet verified.
+
 ## 2026-11-01: Verify Legacy CY2021 Build
 
 Request:

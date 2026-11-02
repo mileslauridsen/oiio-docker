@@ -60,10 +60,13 @@ OIIO is not part of the platform specification. The starting OIIO pins are the r
 - Ship only what OIIO's command-line tools and Python bindings need. Every specified component the image contains must match the specification.
   - Leave out platform components that OIIO does not need: Qt/PyQt/PySide, Boost, oneTBB, oneMKL, Alembic, FBX, OpenSubdiv, OpenVDB, and Ptex. The image makes no compliance claim for those.
   - Disable OIIO plugins that would pull them in.
-- Take general image-format and compression libraries that the platform does not specify (libtiff, libjpeg-turbo, libpng, zlib) from Rocky packages, so they receive distro security updates. Libraries some OCIO or OpenEXR releases fetch for themselves, such as yaml-cpp, pystring, minizip-ng, expat, and libdeflate, must have their versions recorded.
-  - Prefer linking those fetched libraries statically into OCIO or OpenEXR, so the runtime image needs no extra packages for them.
-  - A build that downloads unpinned sources is not a baseline.
-- Install all built components under one prefix, `/opt/vfx`. The runtime stage copies that prefix and installs only the matching Rocky runtime packages. The CentOS 7 approach of copying whole system directories goes away.
+- Build zlib, libjpeg-turbo, libpng, and libtiff from locked sources too, rather than taking Rocky packages. This was revised during Step 1 after the following findings:
+  - OIIO 3.1 requires libjpeg-turbo 2.1 or newer, but Rocky 8 ships 1.5.3 and Rocky 9 ships 2.0.90.
+  - OCIO 2.5 requires zlib 1.2.13 or newer, but both Rocky releases ship 1.2.11.
+  - Rocky's libtiff links Rocky's `libjpeg.so.62`, which would put two libjpeg builds with the same library name in one process.
+- Lock the libraries OCIO would otherwise download (expat, yaml-cpp, pystring, minizip-ng, and the arm64 `sse2neon` header) and link them statically into OCIO. Use OpenEXR's vendored libdeflate and OpenJPH. Every compile step runs with `RUN --network=none`, so a build that tries to download anything fails.
+- Install all built components under one prefix, `/opt/vfx`, with an absolute RPATH. The runtime stage copies only that prefix onto the minimal Rocky base, which already provides glibc, `libstdc++`, OpenSSL, libffi, bzip2, and xz. The CentOS 7 approach of copying whole system directories goes away.
+- Keep link-time optimization off. On amd64, gcc-toolset-14's `lto1` crashed with an internal compiler error while linking OIIO's pybind11 module.
 - gcc-toolset builds link newer C++ runtime pieces statically. The runtime therefore uses the base OS `libstdc++` and must not need any `GLIBCXX` symbol version newer than it provides.
 
 **Tags and build interface**
@@ -162,6 +165,9 @@ Build commands name the platform explicitly, for example `docker buildx bake --s
 
 ## Status
 
-Status: planned
+Status: in progress.
+
+- Steps 1 and 2 are complete for CY2026. `algernon_vfx/oiio:cy2026` builds for `linux/amd64` and `linux/arm64` from [build/locks/cy2026.json](../../build/locks/cy2026.json) and passes all 35 validator checks on both. The results are in the [implementation log](../IMPLEMENTATION.md).
+- Step 3 (CY2024, CY2025, and CY2027) has not started.
 
 Last updated: 2026-11-01

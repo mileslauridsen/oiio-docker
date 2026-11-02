@@ -34,7 +34,7 @@ build: define compatibility -> inspect dependencies -> build -> inspect tools an
 | --- | --- | --- | --- |
 | 1. Project playbook | complete | [Plan](plans/01-project-playbook.md) | Project guidance, workflow, mission, roadmap, plans, and log adopted. |
 | 2. Build verification | complete | [Plan](plans/02-build-verification.md) | The legacy amd64 image builds with OIIO pinned to 2.2.10.1 and, after a library-path fix, passes all runtime checks, including the interactive shell. |
-| 3. Reference platform build matrix | planned | [Plan](plans/03-reference-platform-matrix.md) | Small, verified `cy2024`–`cy2027` images on Rocky Linux for amd64 and arm64, matching each year's platform versions; CY2021 recipe retired. |
+| 3. Reference platform build matrix | in progress (CY2026 verified on amd64 and arm64) | [Plan](plans/03-reference-platform-matrix.md) | Small, verified `cy2024`–`cy2027` images on Rocky Linux for amd64 and arm64, matching each year's platform versions; CY2021 recipe retired. |
 | 4. Locked inputs and automated verification | planned | [Plan](plans/04-locked-inputs-and-ci.md) | Locked sources, RPMs, and toolchain; contract, contents, size, and reproducibility checks; hosted CI over all 8 year/architecture images. |
 
 ## Assumptions
