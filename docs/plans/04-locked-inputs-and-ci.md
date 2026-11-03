@@ -6,12 +6,11 @@ Make every reference-platform image traceable to exact inputs, and verify it aut
 
 ## Current State
 
-- [Phase 3](03-reference-platform-matrix.md) plans the `cy2025`–`cy2027` images; CY2024 is not built.
+- [Phase 3](03-reference-platform-matrix.md) is complete: `cy2025`–`cy2027` images for amd64 and arm64; CY2024 is not built.
   - Base images: digest-pinned Rocky Linux.
   - Compiler: Rocky's `gcc-toolset`.
-  - Sources: checksum-verified upstream releases.
-  - Checks: a per-year validation script.
-- Nothing in Phase 3 has been implemented or built yet.
+  - Sources: checksum-verified upstream releases in one lock per year, fetched by `build/fetch_sources.py`, with compile steps run under `--network=none`.
+  - Checks: `scripts/validate_image.py`, with unpacked-size budgets.
 - The sibling ffmpeg-docker repository has implemented and verified this kind of automation. It consists of:
   - a source lock (`build/dependencies.lock.json`) with signature checks;
   - a toolchain lock (`build/toolchain.lock.json`) covering the base image, the package snapshot, the full package closure, the Dockerfile frontend, BuildKit, and the CI actions;
@@ -84,24 +83,24 @@ Deliverables:
 
 Steps:
 
-- [ ] 1. Record the following for CPython, Imath, OpenEXR, OpenColorIO, OpenImageIO, the Python binding library, and each NumPy wheel (per Python version and architecture):
+- [x] 1. Record the following for CPython, Imath, OpenEXR, OpenColorIO, OpenImageIO, the Python binding library, and each NumPy wheel (per Python version and architecture):
   - version;
   - HTTPS URL;
   - archive name;
   - SHA-256;
   - source root.
-- [ ] 2. Record every dependency that OCIO or OpenEXR fetches during its CMake build, such as yaml-cpp, pystring, minizip-ng, expat, and libdeflate.
+- [x] 2. Record every dependency that OCIO or OpenEXR fetches during its CMake build, such as yaml-cpp, pystring, minizip-ng, expat, and libdeflate.
   - Lock each as an explicit archive and point CMake at the pre-fetched copy.
   - The compile stage must make no network requests after fetching.
-- [ ] 3. Verify upstream signatures where projects publish them, whether GPG detached signatures or Sigstore bundles. Store reviewed keys or identities with the lock.
+- [x] 3. Verify upstream signatures where projects publish them, whether GPG detached signatures or Sigstore bundles. Store reviewed keys or identities with the lock.
   - Record each checksum's provenance: publisher checksum, verified signature, or computed locally.
-- [ ] 4. Implement the fetch helper:
+- [x] 4. Implement the fetch helper:
   - download over HTTPS only, rejecting redirects to anything else;
   - fail on HTTP errors;
   - check the SHA-256 and signature before extracting anything.
-- [ ] 5. Remove every version and URL definition from the Dockerfile. Build arguments select a year's lock, never individual sources.
-- [ ] 6. Make `validate_lock.py` check that every lock is complete and consistent with the [Phase 3 matrix](03-reference-platform-matrix.md#target-matrix). It must also show that a deliberately wrong checksum stops before extraction.
-- [ ] 7. Document the lock update procedure in `docs/SOURCE_PROVENANCE.md`.
+- [x] 5. Remove every version and URL definition from the Dockerfile. Build arguments select a year's lock, never individual sources.
+- [x] 6. Make `validate_lock.py` check that every lock is complete and consistent with the [Phase 3 matrix](03-reference-platform-matrix.md#target-matrix). It must also show that a deliberately wrong checksum stops before extraction.
+- [x] 7. Document the lock update procedure in `docs/SOURCE_PROVENANCE.md`.
 
 Completion evidence: every built source appears in a lock. All years fetched and verified their locked identities on both architectures. A checksum mismatch stops before extraction. The compile stages build with network access disabled after fetching.
 
@@ -238,6 +237,8 @@ Completion evidence: a recorded hosted run in which all six image jobs pass, and
 
 ## Status
 
-Status: planned
+Status: in progress.
 
-Last updated: 2026-11-01
+- Task 1 is complete; see [SOURCE_PROVENANCE.md](../SOURCE_PROVENANCE.md) and the [implementation log](../IMPLEMENTATION.md).
+
+Last updated: 2026-11-03

@@ -19,9 +19,9 @@ define tool and format requirements -> update build recipe -> build image -> ver
 ## Engineering Model
 
 - `Dockerfile`: one parameterized recipe for every platform year.
-  - The builder stage uses a digest-pinned Rocky Linux base and its `gcc-toolset` compiler. It fetches only locked sources and wheels, checking each SHA-256, then builds CPython, NumPy, Imath, OpenEXR, OCIO, OIIO, and their image libraries into `/opt/vfx` with network access disabled.
+  - The builder stage uses a digest-pinned Rocky Linux base and its `gcc-toolset` compiler. It fetches only locked sources, wheels, and tools, checking each SHA-256 and every published GPG or Sigstore signature, then builds CPython, NumPy, Imath, OpenEXR, OCIO, OIIO, and their image libraries into `/opt/vfx` with network access disabled.
   - The runtime stage is the matching Rocky Linux minimal base plus `/opt/vfx`, and runs as the non-root user `algernon`.
-- `build/locks/cy<year>.json`: each year's specified versions, toolchain, and locked inputs. `build/fetch_sources.py` downloads and verifies them.
+- `build/locks/cy<year>.json`: each year's specified versions, toolchain, and locked inputs. `build/fetch_sources.py` downloads and verifies them with the keys in `build/keys/`, and `scripts/validate_lock.py` checks the locks ([SOURCE_PROVENANCE.md](SOURCE_PROVENANCE.md)).
 - `docker-bake.hcl`: one target per year, with that year's base images, compiler, and C++ standard.
 - `scripts/validate_image.py` and `build/image-size-budgets.json`: check a built image against its lock and size budget.
 - `README.md`: the operator entry point, with build and interactive-shell commands and documentation links.

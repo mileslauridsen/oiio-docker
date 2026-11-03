@@ -37,11 +37,13 @@ ENV PATH=/opt/rh/gcc-toolset-${GCC_TOOLSET}/root/usr/bin:/opt/vfx/bin:/opt/build
 ENV CC=/usr/local/bin/vfx-gcc CXX=/usr/local/bin/vfx-g++
 ENV PKG_CONFIG_PATH=/opt/vfx/lib/pkgconfig:/opt/deps/lib/pkgconfig
 
-# Fetch only locked inputs; the helper verifies every SHA-256 before extracting.
+# Fetch only locked inputs; the helper verifies every SHA-256, GPG signature, and Sigstore bundle
+# before extracting, using the pinned keys in build/keys and the locked cosign.
 FROM builder AS sources
 ARG PLATFORM_YEAR
 ARG TARGETPLATFORM
 COPY build/fetch_sources.py build/locks/${PLATFORM_YEAR}.json /build/
+COPY build/keys /build/keys
 RUN PY=$(command -v python3 || echo /usr/libexec/platform-python); \
     "$PY" -u /build/fetch_sources.py --lockfile /build/${PLATFORM_YEAR}.json \
         --platform "$TARGETPLATFORM" --all --output-dir /src/downloads --extract-dir /src

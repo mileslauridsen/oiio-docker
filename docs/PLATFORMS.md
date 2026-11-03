@@ -133,16 +133,16 @@ The unpacked size is the disk space the image takes once pulled: the sum of its 
 
 `docker image inspect` reports a larger `.Size` on Docker Desktop, because its containerd image store adds the compressed layers to the unpacked ones. Use the figures here, not that one.
 
-The image IDs are from local builds, tagged `cy<year>-<arch>` for testing; the images are not published to a registry, so there are no registry digests. Building with the bake file's own tags or the plain `docker build` gives images with the same layers and config but a different local image ID.
+The image IDs are from local builds made on 2026-11-03 from the signature-verified sources, tagged for testing; the images are not published to a registry, so there are no registry digests. Building with the bake file's own tags or the plain `docker build` gives images with the same layers and config but a different local image ID.
 
 | Image | Platform | Image ID | Unpacked | Compressed |
 | --- | --- | --- | --- | --- |
-| cy2025 | linux/amd64 | `sha256:19fb8c182f7b2eb2ba40818e2d4469de21bb9dfcb8e8e95d066e968b4bd9af58` | 272 MB | 89 MB |
-| cy2025 | linux/arm64 | `sha256:2310be2c93c88cbaf21dc5b0f115c4727a7c9e6fa142ee897ab1be25c2c3668a` | 262 MB | 82 MB |
-| cy2026 | linux/amd64 | `sha256:b91701f9e6f2431ef91f7e6422db14d6691a22198a03967d30431cc9a4effe75` | 248 MB | 84 MB |
-| cy2026 | linux/arm64 | `sha256:63d014790cc84283a2b260521abab3fd52449b91919a108a9f08b33bbd6b8a35` | 256 MB | 79 MB |
-| cy2027 | linux/amd64 | `sha256:c4f9d81ef5cdef07c08c2a1b7173cbd880d3040a2cff5e3bdd5c2f3d1d737fa8` | 316 MB | 107 MB |
-| cy2027 | linux/arm64 | `sha256:2ecc113fb1a0120a4b70210c0982e24d2afbb59e28a6f6532d87f5717f4126fa` | 334 MB | 103 MB |
+| cy2025 | linux/amd64 | `sha256:56a6562e56f8f93814917192fdf28549441a5c47e232de80394a71cff6212c24` | 272 MB | 89 MB |
+| cy2025 | linux/arm64 | `sha256:ecd1ae22c0554085144024454666f21956a95379ae97d5cba2589997afa54ae8` | 262 MB | 82 MB |
+| cy2026 | linux/amd64 | `sha256:8b94c820608aa5d8efac547ed0ebac1a7f1eafc4f56b4785551ecdeed7617303` | 248 MB | 84 MB |
+| cy2026 | linux/arm64 | `sha256:e07ef8b55400546f5344ccda40fd7e649d05c4301935596cb51c98d835fe32b8` | 256 MB | 79 MB |
+| cy2027 | linux/amd64 | `sha256:290d4b3b85296bef183258d337c310374d7d46ab8b89c64f69c6d365e297fdb7` | 316 MB | 107 MB |
+| cy2027 | linux/arm64 | `sha256:111e6bf6eca740fbc22e51d95a9db85653672108446a8849c39a69c9247083b2` | 334 MB | 103 MB |
 
 The amd64 images were built and checked under emulation on an arm64 host. They have not yet been run on x86-64 hardware.
 
@@ -155,4 +155,4 @@ Each image is its Rocky Linux minimal base plus `/opt/vfx`. Unpacked, the Rocky 
 - **Drop the oldest year when it leaves the window.** The platform supports the current year and the three before it, so CY2025 leaves on 2029-01-01.
 - **Refresh inputs deliberately:** base-image digests, Rocky packages, and security patch releases. Change the lock, rebuild every year that shares the change, rerun the validator, and record the new image IDs and sizes here and in the implementation log.
 
-Last updated: 2026-11-02
+Last updated: 2026-11-03

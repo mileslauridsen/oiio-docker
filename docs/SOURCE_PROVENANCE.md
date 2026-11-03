@@ -1,0 +1,66 @@
+# Source Provenance
+
+Each platform year's lock, `build/locks/cy<year>.json`, is the authoritative list of what that image is built from: every source archive, NumPy wheel, and build tool, with its version, HTTPS URL, SHA-256, and any upstream signature. The Dockerfile names no sources. Its build arguments only select a year's lock.
+
+`build/fetch_sources.py` runs in the Dockerfile's `sources` stage. For each locked input it:
+
+1. downloads over HTTPS only, rejecting a redirect to anything else and failing on HTTP errors;
+2. checks the SHA-256;
+3. checks every signature the lock records for it;
+4. only then extracts it.
+
+Every later build step runs with `--network=none`, so nothing can be fetched after this stage. `scripts/validate_lock.py` checks the locks and shows that a bad checksum or a bad signature stops the helper before extraction.
+
+## How Each Input Is Verified
+
+| Inputs | Verification at build time |
+| --- | --- |
+| zlib, libjpeg-turbo, libtiff, expat, CPython | SHA-256, then the project's detached GPG signature, which must come from the pinned key fingerprint. |
+| Imath, OpenEXR, OpenColorIO, OpenImageIO | SHA-256, then the project's Sigstore bundle, checked with the locked `cosign` against the exact GitHub workflow that signs that tag (`.github/workflows/release-sign.yml@refs/tags/v<version>`, issuer `https://token.actions.githubusercontent.com`). |
+| OpenColorIO 2.4.2 (CY2025) | SHA-256 only. This release publishes no signed tarball, so the lock uses GitHub's tag archive. `validate_lock.py` records it as the one allowed exception. |
+| NumPy wheels | SHA-256 published by PyPI. |
+| `cosign` 3.1.3 | SHA-256 published in the release's `cosign_checksums.txt`, matching a local computation. It is fetched and checked first, used only in the `sources` stage, and never shipped. |
+| NASM, libpng, libdeflate, yaml-cpp, pystring, minizip-ng, `sse2neon`, pybind11, fmt, robin-map, nanobind | SHA-256 computed locally from the pinned HTTPS URL. None of these publishes signatures for the locked file. |
+
+A locally computed SHA-256 fixes the exact bytes, so a changed or corrupted download fails. It is not an independent statement from the publisher, the way a signature or a publisher checksum is.
+
+The ASWF projects' signed release tarballs replaced the GitHub tag archives on 2026-11-02. For every year, the release tarball unpacked to exactly the same files as the tag archive the images had been built and verified from.
+
+## Pinned GPG Keys
+
+The keys are in `build/keys/`. Each was fetched from keys.openpgp.org, where the user ID's email address is verified, and is pinned by its primary-key fingerprint. gpgv reports the primary fingerprint for a signature made by any of the key's subkeys.
+
+| Key file | Signer | Fingerprint | Signs |
+| --- | --- | --- | --- |
+| `zlib-mark-adler.asc` | Mark Adler | `5ED46A6721D365587791E2AA783FCD8E58BCAFBA` | zlib 1.3.1, 1.3.2 |
+| `libjpeg-turbo.asc` | The libjpeg-turbo Project | `0338C8D8D9FDA62CF9C421BD7EC2DBB6F4DBF434` | libjpeg-turbo 3.1.2 |
+| `libtiff-even-rouault.asc` | Even Rouault | `B1FA7D81EEB8E66399178B9733EBBFC47B3DD87D` | libtiff 4.7.1 |
+| `expat-sebastian-pipping.asc` | Sebastian Pipping | `3176EF7DB2367F1FCA4F306B1F9B0E909AF37285` | expat 2.7.2, 2.8.5 |
+| `cpython-pablo-galindo-salgado.asc` | Pablo Galindo Salgado | `A035C8C19219BA821ECEA86B64E628F8D684696D` | CPython 3.11.18 |
+| `cpython-thomas-wouters.asc` | Thomas Wouters | `7169605F62C751356D054A26A821E680E5FA6305` | CPython 3.13.18 |
+
+Cross-checks:
+
+- libjpeg-turbo's fingerprint matches the one libjpeg-turbo.org publishes.
+- python.org lists Pablo Galindo Salgado as the 3.11 release manager (key ID `64E628F8D684696D`) and Thomas Wouters as the 3.13 release manager (key ID `A821E680E5FA6305`). CPython 3.11.18 is signed by `FFE87404168BD847`, the signing subkey of Pablo Galindo Salgado's key.
+- zlib, libtiff, and expat do not publish a fingerprint on their project pages that this check found. Their keys rest on keys.openpgp.org's verified addresses for the named maintainers.
+
+## Known Limits
+
+- **Sigstore needs the network.** `cosign` downloads Sigstore's trust root when it verifies a bundle. The `sources` stage has network access, but a Sigstore outage would stop a cold build there.
+- **Key expiry.** Sebastian Pipping's signing subkey expires on 2026-12-28. gpgv still accepts signatures made before a key expired, but check the expat signature after that date, and refresh the key file if the maintainer extends it.
+- **Trust in `cosign`.** It is trusted through its publisher checksum, fetched over HTTPS from GitHub. Its own Sigstore signature is not checked, since that would need a verifier trusted some other way.
+
+## Lock Update Procedure
+
+1. Change the entry in each affected lock: version, HTTPS URL, archive name, source root, SHA-256, and checksum provenance. For a signed release, also update the signature URL and file. For GPG, review the signer and the pinned key fingerprint; for Sigstore, update the tag in the workflow identity.
+2. For a new GPG signer, fetch the key from keys.openpgp.org or the project, confirm its fingerprint against what the project publishes, and add it to `build/keys/`.
+3. Run `python3 scripts/validate_lock.py`.
+4. Fetch and verify the year's inputs on both architectures, without building the rest:
+
+   ```sh
+   docker buildx bake --set '*.platform=linux/arm64' --set 'cy2026.target=sources' --set 'cy2026.output=type=cacheonly' --progress=plain cy2026
+   ```
+
+   Repeat with `linux/amd64`. The log shows each `SHA-256 verified`, `GPG signature verified`, and `Sigstore signature verified` line.
+5. Build every affected year on both architectures, run `scripts/validate_image.py`, and record the results in this document and the [implementation log](IMPLEMENTATION.md).

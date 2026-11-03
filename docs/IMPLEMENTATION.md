@@ -2,6 +2,41 @@
 
 Record decisions that change project direction, specifications, runtime behavior, tests, validation, dependencies, deployment, or architecture. Link to plans rather than duplicating their details.
 
+## 2026-11-03: Verify Source Signatures (Phase 4 Task 1)
+
+Request:
+
+- Start Phase 4. For the Sigstore-signed ASWF sources, switch to the signed release tarballs and verify their bundles in the build (the user's choice of three options).
+
+Decision:
+
+- Restore GPG verification to `build/fetch_sources.py`, following ffmpeg-docker: a signature must verify and come from the pinned primary-key fingerprint. Five projects sign the files the locks use: zlib, libjpeg-turbo, libtiff, expat, and CPython. Their keys are in `build/keys/`, fetched from keys.openpgp.org under each maintainer's verified address. The libjpeg-turbo fingerprint matches libjpeg-turbo.org, and the CPython keys match python.org's release managers. CPython 3.11.18 is signed by Pablo Galindo Salgado's signing subkey `FFE87404168BD847`, and expat by a subkey of Sebastian Pipping's key.
+- Imath, OpenEXR, OCIO, and OIIO sign release tarballs with Sigstore, not the GitHub tag archives the locks used. Switch the 11 affected entries to the signed tarballs. For each, the tarball unpacked to exactly the same files as the tag archive. OCIO 2.4.2 (CY2025) publishes no signed tarball and stays a checksum-only tag archive, as the one exception `validate_lock.py` allows.
+- Verify each Sigstore bundle in the `sources` stage with `cosign` 3.1.3 (released 2026-08-06; v3.1.4 was two weeks old), locked as a new `tool` kind per platform by its publisher checksum. The identity must be the project's `.github/workflows/release-sign.yml@refs/tags/v<version>` with GitHub's OIDC issuer. `cosign` is fetched and checked first and never shipped.
+- The signature checks run after the SHA-256 and before extraction. A named fetch also takes the locked tools.
+- Add `scripts/validate_lock.py`. It checks each lock's completeness, the source set per year, the specification series, signature coverage, key files against pinned fingerprints, and Sigstore tags. It checks `docker-bake.hcl` arguments against each lock and the Dockerfile defaults against CY2026. It also checks that the Dockerfile names no source URLs, and that a bad checksum and a bad GPG signature both stop the helper before extraction.
+- NASM, libpng, libdeflate, yaml-cpp, pystring, minizip-ng, `sse2neon`, pybind11, fmt, robin-map, and nanobind publish no signatures for the locked files; libpng's signature URLs returned 404.
+- Document the policy, keys, limits, and lock update procedure in [SOURCE_PROVENANCE.md](SOURCE_PROVENANCE.md).
+
+Affected areas:
+
+- `build/fetch_sources.py`, `build/keys/`, the three locks, the Dockerfile's `sources` stage, `scripts/validate_lock.py`, SOURCE_PROVENANCE.md, PLATFORMS.md, the README, the mission, the Phase 4 plan, the roadmap, and this log.
+
+Validation:
+
+- `docker buildx bake` with `target=sources` and `output=type=cacheonly` passed for all three years on both architectures. Each verified every SHA-256 (21 inputs per platform for CY2025 and CY2027, 20 for CY2026), plus 8 signatures for CY2025 and 9 for CY2026 and CY2027.
+- In the Rocky 8 builder, `cosign` verified Imath's bundle and rejected the same bundle against a different file.
+- `scripts/validate_lock.py` passes. On scratch copies of the repository, it failed with a specific message for a wrong fingerprint, an OCIO version outside the specified series, a bake argument that differs from the lock, and a URL in the Dockerfile.
+- All six images were rebuilt and passed all 35 validator checks at their previous unpacked sizes. The new image IDs are in PLATFORMS.md.
+- A file-by-file comparison of `/opt/vfx` against the previous arm64 images found no added or removed files. OIIO, OCIO, OpenEXR, and Imath are byte-identical. Only six files and the `.pyc` files differ: libjpeg-turbo's three tools and two libraries, which embed the build date (`build 20261103`), and `libpython`, which embeds its build time in `sys.version`.
+- A first attempt to bake all three arm64 years at once ran out of memory in OCIO's compile step (8 jobs per year on an 8 GB Docker VM). Building one year at a time succeeded.
+
+Follow-up:
+
+- Task 5: build dates in libjpeg-turbo and CPython, and timestamped `.pyc` files.
+- Sebastian Pipping's expat signing subkey expires on 2026-12-28; recheck the expat signature after that date.
+- Task 2 is next: lock the RPM package closures.
+
 ## 2026-11-02: Budget The Unpacked Image Size
 
 Request:

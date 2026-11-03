@@ -47,7 +47,16 @@
       "sha256": "38ef96b8dfe510d42707d9c781877914792541133e1870841463bfa73f883e32",
       "source_root": "zlib-1.3.1",
       "role": "shared; OCIO 2.4 requires >= 1.2.8, and 1.3.1 matches CY2026, while Rocky 8 ships 1.2.11",
-      "checksum_provenance": "Locally computed SHA-256 from the upstream release asset."
+      "checksum_provenance": "Locally computed SHA-256 from the upstream release asset; detached GPG signature verified with the pinned key of Mark Adler.",
+      "signatures": [
+        {
+          "type": "gpg",
+          "url": "https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.xz.asc",
+          "file": "zlib-1.3.1.tar.xz.asc",
+          "key_file": "keys/zlib-mark-adler.asc",
+          "fingerprint": "5ED46A6721D365587791E2AA783FCD8E58BCAFBA"
+        }
+      ]
     },
     {
       "name": "libjpeg-turbo",
@@ -57,7 +66,16 @@
       "sha256": "8f0012234b464ce50890c490f18194f913a7b1f4e6a03d6644179fa0f867d0cf",
       "source_root": "libjpeg-turbo-3.1.2",
       "role": "shared; OIIO 3.1 requires >= 2.1 and defaults to 3.1.2, while Rocky 8 ships 1.5.3",
-      "checksum_provenance": "Locally computed SHA-256 from the upstream release asset."
+      "checksum_provenance": "Locally computed SHA-256 from the upstream release asset; detached GPG signature verified with the pinned key of the libjpeg-turbo Project.",
+      "signatures": [
+        {
+          "type": "gpg",
+          "url": "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/3.1.2/libjpeg-turbo-3.1.2.tar.gz.sig",
+          "file": "libjpeg-turbo-3.1.2.tar.gz.sig",
+          "key_file": "keys/libjpeg-turbo.asc",
+          "fingerprint": "0338C8D8D9FDA62CF9C421BD7EC2DBB6F4DBF434"
+        }
+      ]
     },
     {
       "name": "libpng",
@@ -77,7 +95,16 @@
       "sha256": "b92017489bdc1db3a4c97191aa4b75366673cb746de0dce5d7a749d5954681ba",
       "source_root": "tiff-4.7.1",
       "role": "shared; OIIO's default local-build version, built against the locked zlib and libjpeg-turbo to avoid two libjpeg.so.62 copies",
-      "checksum_provenance": "Locally computed SHA-256 from the upstream release archive."
+      "checksum_provenance": "Locally computed SHA-256 from the upstream release archive; detached GPG signature verified with the pinned key of Even Rouault.",
+      "signatures": [
+        {
+          "type": "gpg",
+          "url": "https://download.osgeo.org/libtiff/tiff-4.7.1.tar.xz.sig",
+          "file": "tiff-4.7.1.tar.xz.sig",
+          "key_file": "keys/libtiff-even-rouault.asc",
+          "fingerprint": "B1FA7D81EEB8E66399178B9733EBBFC47B3DD87D"
+        }
+      ]
     },
     {
       "name": "cpython",
@@ -87,17 +114,35 @@
       "sha256": "9120e0a653868f6e3698d36cdd99e5a58903ec9469e448f21d98f7b16d8fa290",
       "source_root": "Python-3.11.18",
       "role": "platform Python 3.11.x; built from source for one install layout across years",
-      "checksum_provenance": "Locally computed SHA-256 from python.org."
+      "checksum_provenance": "Locally computed SHA-256 from python.org; detached GPG signature verified with the pinned key of Pablo Galindo Salgado, the release manager python.org lists.",
+      "signatures": [
+        {
+          "type": "gpg",
+          "url": "https://www.python.org/ftp/python/3.11.18/Python-3.11.18.tar.xz.asc",
+          "file": "Python-3.11.18.tar.xz.asc",
+          "key_file": "keys/cpython-pablo-galindo-salgado.asc",
+          "fingerprint": "A035C8C19219BA821ECEA86B64E628F8D684696D"
+        }
+      ]
     },
     {
       "name": "imath",
       "version": "3.1.12",
-      "url": "https://github.com/AcademySoftwareFoundation/Imath/archive/refs/tags/v3.1.12.tar.gz",
+      "url": "https://github.com/AcademySoftwareFoundation/Imath/releases/download/v3.1.12/Imath-3.1.12.tar.gz",
       "archive": "Imath-3.1.12.tar.gz",
-      "sha256": "8a1bc258f3149b5729c2f4f8ffd337c0e57f09096e4ba9784329f40c4a9035da",
+      "sha256": "cb8ca9ca77ac4338ebbee911fc90c886011ac5b00088630bacf8ef6c6e522f0a",
       "source_root": "Imath-3.1.12",
       "role": "platform Imath 3.1.x; OCIO 2.4's recommended version",
-      "checksum_provenance": "Locally computed SHA-256 for the tag archive."
+      "checksum_provenance": "Locally computed SHA-256 of the signed release tarball, whose files match the tag archive; Sigstore bundle verified against the project's release-sign workflow for this tag.",
+      "signatures": [
+        {
+          "type": "sigstore",
+          "url": "https://github.com/AcademySoftwareFoundation/Imath/releases/download/v3.1.12/Imath-3.1.12.tar.gz.sigstore.json",
+          "file": "Imath-3.1.12.tar.gz.sigstore.json",
+          "certificate_identity": "https://github.com/AcademySoftwareFoundation/Imath/.github/workflows/release-sign.yml@refs/tags/v3.1.12",
+          "certificate_oidc_issuer": "https://token.actions.githubusercontent.com"
+        }
+      ]
     },
     {
       "name": "libdeflate",
@@ -112,12 +157,21 @@
     {
       "name": "openexr",
       "version": "3.3.15",
-      "url": "https://github.com/AcademySoftwareFoundation/openexr/archive/refs/tags/v3.3.15.tar.gz",
+      "url": "https://github.com/AcademySoftwareFoundation/openexr/releases/download/v3.3.15/openexr-3.3.15.tar.gz",
       "archive": "openexr-3.3.15.tar.gz",
-      "sha256": "21bd9e029185f4da7f6a662be18a13ccaf698d5c9bd8964c40e0a4227cbc7e1b",
+      "sha256": "2f046c40861848a43b5232bf2d08d8c57ef4d4458c5ea96920d976806148a753",
       "source_root": "openexr-3.3.15",
       "role": "platform OpenEXR 3.3.x; compiles the locked libdeflate into OpenEXRCore",
-      "checksum_provenance": "Locally computed SHA-256 for the tag archive."
+      "checksum_provenance": "Locally computed SHA-256 of the signed release tarball, whose files match the tag archive; Sigstore bundle verified against the project's release-sign workflow for this tag.",
+      "signatures": [
+        {
+          "type": "sigstore",
+          "url": "https://github.com/AcademySoftwareFoundation/openexr/releases/download/v3.3.15/openexr-3.3.15.tar.gz.sigstore.json",
+          "file": "openexr-3.3.15.tar.gz.sigstore.json",
+          "certificate_identity": "https://github.com/AcademySoftwareFoundation/openexr/.github/workflows/release-sign.yml@refs/tags/v3.3.15",
+          "certificate_oidc_issuer": "https://token.actions.githubusercontent.com"
+        }
+      ]
     },
     {
       "name": "expat",
@@ -127,7 +181,16 @@
       "sha256": "21b778b34ec837c2ac285aef340f9fb5fa063a811b21ea4d2412a9702c88995c",
       "source_root": "expat-2.7.2",
       "role": "static, linked into OCIO; OCIO 2.4 requires >= 2.4.1 and recommends 2.5.0, so use the CVE-fixed release CY2026 uses",
-      "checksum_provenance": "Locally computed SHA-256 from the upstream release asset."
+      "checksum_provenance": "Locally computed SHA-256 from the upstream release asset; detached GPG signature verified with the pinned key of Sebastian Pipping.",
+      "signatures": [
+        {
+          "type": "gpg",
+          "url": "https://github.com/libexpat/libexpat/releases/download/R_2_7_2/expat-2.7.2.tar.xz.asc",
+          "file": "expat-2.7.2.tar.xz.asc",
+          "key_file": "keys/expat-sebastian-pipping.asc",
+          "fingerprint": "3176EF7DB2367F1FCA4F306B1F9B0E909AF37285"
+        }
+      ]
     },
     {
       "name": "yaml-cpp",
@@ -187,7 +250,7 @@
       "sha256": "2d8f2c47c40476d6e8cea9d878f6601d04f6d5642b47018eaafa9e9f833f3690",
       "source_root": "OpenColorIO-2.4.2",
       "role": "platform OpenColorIO 2.4.x",
-      "checksum_provenance": "Locally computed SHA-256 for the tag archive."
+      "checksum_provenance": "Locally computed SHA-256 for the tag archive; this release publishes no signed tarball, so the tag archive is checksum-only."
     },
     {
       "name": "fmt",
@@ -212,12 +275,21 @@
     {
       "name": "openimageio",
       "version": "3.1.19.0",
-      "url": "https://github.com/AcademySoftwareFoundation/OpenImageIO/archive/refs/tags/v3.1.19.0.tar.gz",
+      "url": "https://github.com/AcademySoftwareFoundation/OpenImageIO/releases/download/v3.1.19.0/OpenImageIO-3.1.19.0.tar.gz",
       "archive": "OpenImageIO-3.1.19.0.tar.gz",
-      "sha256": "b9318d660e736f40705abc68032ebb38a2dfcefc18bf66f9ba05671eeea7f0a2",
+      "sha256": "10b2a61db5df5e34465640abd5c889ff3dfb1d893d207428c42a3d64e5e039f6",
       "source_root": "OpenImageIO-3.1.19.0",
       "role": "newest 3.1 patch release; ASWF's CY2026 reference pin is 3.1.18.1",
-      "checksum_provenance": "Locally computed SHA-256 for the tag archive."
+      "checksum_provenance": "Locally computed SHA-256 of the signed release tarball, whose files match the tag archive; Sigstore bundle verified against the project's release-sign workflow for this tag.",
+      "signatures": [
+        {
+          "type": "sigstore",
+          "url": "https://github.com/AcademySoftwareFoundation/OpenImageIO/releases/download/v3.1.19.0/OpenImageIO-3.1.19.0.tar.gz.sigstore.json",
+          "file": "OpenImageIO-3.1.19.0.tar.gz.sigstore.json",
+          "certificate_identity": "https://github.com/AcademySoftwareFoundation/OpenImageIO/.github/workflows/release-sign.yml@refs/tags/v3.1.19.0",
+          "certificate_oidc_issuer": "https://token.actions.githubusercontent.com"
+        }
+      ]
     },
     {
       "name": "numpy",
@@ -240,6 +312,28 @@
       "sha256": "7ab55401287bfec946ced39700c053796e7cc0e3acbef09993a9ad2adba6ca6e",
       "role": "platform NumPy 1.26.x",
       "checksum_provenance": "Publisher SHA-256 from the PyPI JSON API."
+    },
+    {
+      "name": "cosign",
+      "version": "3.1.3",
+      "kind": "tool",
+      "platform": "linux/amd64",
+      "url": "https://github.com/sigstore/cosign/releases/download/v3.1.3/cosign-linux-amd64",
+      "archive": "cosign-linux-amd64",
+      "sha256": "4629c757b7618056f8ddd7e2625ae9fdd94c0372a65049520bc7d9df9efc7f71",
+      "role": "build tool that verifies Sigstore bundles in the fetch stage; never shipped",
+      "checksum_provenance": "Publisher SHA-256 from the release's cosign_checksums.txt, matching a local computation."
+    },
+    {
+      "name": "cosign",
+      "version": "3.1.3",
+      "kind": "tool",
+      "platform": "linux/arm64",
+      "url": "https://github.com/sigstore/cosign/releases/download/v3.1.3/cosign-linux-arm64",
+      "archive": "cosign-linux-arm64",
+      "sha256": "c5d324e091826b0d7a78eb16fef316450b4eb9aaec045611c08ba06f5e73220a",
+      "role": "build tool that verifies Sigstore bundles in the fetch stage; never shipped",
+      "checksum_provenance": "Publisher SHA-256 from the release's cosign_checksums.txt, matching a local computation."
     }
   ]
 }
