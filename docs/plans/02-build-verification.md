@@ -36,6 +36,7 @@ The full evidence is in the [implementation log](../IMPLEMENTATION.md).
 **Runtime**
 
 - `python3` failed to load `libpython3.7m.so.1.0`. The runtime stage did not carry over the base image's `LD_LIBRARY_PATH` and `PYTHONPATH`. Setting both to their `/usr/local` values fixed it.
+- The verified recipe is the root `Dockerfile` at commit `be6675c`. Phase 3 replaced it and removed the copy kept in `legacy/`.
 - The verified image is `algernon_vfx/oiio:legacy-cy2021-amd64`: image ID `sha256:8fbdc0c96915aba134fe4876250e72a3346abed226ecd34a143e2a273afb206b`, 1,546,593,927 bytes. It runs CentOS 7.9 with glibc 2.17.
 - Passed:
   - `oiiotool`, `iinfo`, and `maketx` start;

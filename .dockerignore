@@ -1,6 +1,5 @@
 .git
 .idea
-legacy
 docs
 templates
 **/__pycache__

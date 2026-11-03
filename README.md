@@ -41,8 +41,6 @@ The validator checks the image against its lock. It covers:
 - an OCIO ACES conversion;
 - the size budget in [build/image-size-budgets.json](build/image-size-budgets.json).
 
-The previous CY2021 recipe remains in [legacy/Dockerfile.cy2021](legacy/Dockerfile.cy2021) until the full platform matrix is verified.
-
 ## Project documentation
 
 - [Platforms](docs/PLATFORMS.md): the supported years, their verified versions, and annual maintenance.

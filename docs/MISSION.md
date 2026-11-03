@@ -24,7 +24,6 @@ define tool and format requirements -> update build recipe -> build image -> ver
 - `build/locks/cy<year>.json`: each year's specified versions, toolchain, and locked inputs. `build/fetch_sources.py` downloads and verifies them.
 - `docker-bake.hcl`: one target per year, with that year's base images, compiler, and C++ standard.
 - `scripts/validate_image.py` and `build/image-size-budgets.json`: check a built image against its lock and size budget.
-- `legacy/Dockerfile.cy2021`: the previous CY2021 recipe, kept until Phase 3 retires it.
 - `README.md`: the operator entry point, with build and interactive-shell commands and documentation links.
 - `docs/`: mission, platform support contract ([PLATFORMS.md](PLATFORMS.md)), direction, execution plans, Git policy, and decision history.
 - `templates/project-playbook/`: reusable source templates, kept separate from the adopted project documents.

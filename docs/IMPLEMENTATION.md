@@ -2,6 +2,32 @@
 
 Record decisions that change project direction, specifications, runtime behavior, tests, validation, dependencies, deployment, or architecture. Link to plans rather than duplicating their details.
 
+## 2026-11-02: Retire The CY2021 Recipe
+
+Request:
+
+- Retire the legacy recipe (Phase 3 Step 5).
+
+Decision:
+
+- Remove `legacy/Dockerfile.cy2021` and its `.dockerignore` entry. The file is identical to the root `Dockerfile` at `be6675c`, the commit that verified the Phase 2 baseline, so the recipe stays recoverable from history. The Phase 2 evidence stays in the [build verification plan](plans/02-build-verification.md) and the CY2021 entry below.
+- Remove the legacy recipe from the README and the mission's engineering model. Drop the roadmap's list of suspected problems in that recipe; Phase 2 recorded what actually failed.
+- No `cy2021-final` Git tag was created.
+
+Affected areas:
+
+- `legacy/Dockerfile.cy2021` (removed), `.dockerignore`, the README, the mission, the Phase 2 and Phase 3 plans, the roadmap, and this log.
+
+Validation:
+
+- No tracked build file references `centos:centos7` or an ASWF image. The only Dockerfile left is the root `Dockerfile`.
+- `docker buildx bake` for `cy2026` on `linux/arm64` resolved every step from cache after the `.dockerignore` change. Its layers and creation time match `cy2026-arm64`; the image ID differs only in metadata, as already noted for Phase 4.
+- The local `algernon_vfx/oiio:legacy-cy2021-amd64` image was left in place.
+
+Follow-up:
+
+- Before merging: build every year with the bake file's own tags, and rerun the README's plain build and interactive shell.
+
 ## 2026-11-02: Document The Platform Support Contract
 
 Request:
