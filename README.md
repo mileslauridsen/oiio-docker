@@ -39,7 +39,7 @@ The validator checks the image against its lock. It covers:
 - unresolved libraries and excluded components;
 - EXR, TIFF, PNG, and JPEG round trips, `maketx`, and NumPy reads;
 - an OCIO ACES conversion;
-- the size budget in [build/image-size-budgets.json](build/image-size-budgets.json).
+- the unpacked size against the budget in [build/image-size-budgets.json](build/image-size-budgets.json).
 
 ## Project documentation
 

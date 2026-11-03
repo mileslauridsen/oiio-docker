@@ -164,7 +164,7 @@ Steps:
 - [ ] 3. Check the image contents. Absent: compilers, CMake, headers, static archives, sources, and the excluded platform libraries (Qt, Boost, TBB, OpenVDB). Present: the `algernon` user and Bash.
 - [ ] 4. Strip shipped binaries. Keep debug copies only in the build stage.
 - [ ] 5. Collect the license and notice files for every shipped component, including statically linked dependencies, into the runtime image.
-- [ ] 6. Measure each year and architecture using `docker image inspect .Size`, the same metric ffmpeg-docker uses, and set a budget for each in `image-size-budgets.json`. Fail on an overrun that has not been reviewed.
+- [ ] 6. Measure each year and architecture by its unpacked size, the sum of its layer sizes from `docker history --human=false`, and set a budget for each in `image-size-budgets.json`. Fail on an overrun that has not been reviewed. Do not use `docker image inspect .Size`, the metric ffmpeg-docker uses: with Docker Desktop's containerd image store it also counts the compressed layers. Phase 3 already moved the validator to the unpacked size.
 
 Completion evidence: the validator passes for all six images, and fails on a deliberate version mismatch, a missing library, a leftover compiler, and a size overrun.
 

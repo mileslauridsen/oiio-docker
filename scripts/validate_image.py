@@ -236,14 +236,18 @@ def main():
     print("INFO OCIO built-in default config: {0}".format(colour[0]))
     check.expect("OCIO ACES2065-1 to ACEScg conversion", colour[-1], "True")
 
-    # Measure after containers have run: Docker Desktop reports only compressed content for a
-    # freshly loaded image whose platform differs from the engine's until it is unpacked.
+    # Budget the unpacked size: the sum of the layer sizes. With the containerd image store, .Size also
+    # counts the compressed layers, and before an image is unpacked it counts only those.
     inspect = json.loads(run(["docker", "image", "inspect", args.image]))[0]
-    check.results["image"] = {"id": inspect["Id"], "size": inspect["Size"]}
-    print("INFO image {0} size {1} bytes".format(inspect["Id"], inspect["Size"]))
+    layers = [int(size) for size in run(["docker", "history", "--human=false", "--format", "{{.Size}}",
+                                          args.image]).split()]
+    unpacked = sum(layers)
+    check.results["image"] = {"id": inspect["Id"], "unpacked_size": unpacked, "reported_size": inspect["Size"]}
+    print("INFO image {0} unpacked size {1} bytes (docker image inspect .Size {2})".format(
+        inspect["Id"], unpacked, inspect["Size"]))
     with open(os.path.join(REPO, "build", "image-size-budgets.json")) as budget_file:
         budget = json.load(budget_file)["budgets"].get(args.year, {}).get(args.platform)
-    check.expect("image size within budget", budget is not None and inspect["Size"] <= budget, True)
+    check.expect("image size within budget", budget is not None and 0 < unpacked <= budget, True)
 
     if args.metadata:
         with open(args.metadata, "w") as output:

@@ -2,6 +2,43 @@
 
 Record decisions that change project direction, specifications, runtime behavior, tests, validation, dependencies, deployment, or architecture. Link to plans rather than duplicating their details.
 
+## 2026-11-02: Budget The Unpacked Image Size
+
+Request:
+
+- Fix the size metric before merging Phase 3.
+
+Decision:
+
+- With Docker Desktop's containerd image store, `docker image inspect .Size` is the unpacked layers plus the compressed layers. For each arm64 image, the layer sizes plus the `docker save` output (the compressed blobs) match `.Size` to within 1 MB. Every size recorded earlier in this log and in PLATFORMS.md therefore overstated the images by their compressed size, including the base sizes (Rocky 8.10 minimal "147 MB" and Rocky 9.8 minimal "242 MB").
+- The validator now budgets the unpacked size: the sum of the layer sizes from `docker history --human=false`. It means the same thing with the classic image store that hosted CI will use. `.Size` is still printed for reference, and an unpacked size of 0 fails the check.
+- Budgets are the new measurements plus about 5%. PLATFORMS.md lists unpacked and compressed sizes, and the Phase 4 plan now uses this metric in place of ffmpeg-docker's `.Size`.
+
+Affected areas:
+
+- `scripts/validate_image.py`, `build/image-size-budgets.json`, PLATFORMS.md, the README, the Phase 4 plan, and this log. No image changed.
+
+Validation:
+
+- Unpacked and compressed sizes of the recorded images:
+
+  | Image | Unpacked | Compressed (`docker save`) | Earlier `.Size` |
+  | --- | --- | --- | --- |
+  | cy2025 amd64 | 272,252,928 | 88,574,464 | 360,809,384 |
+  | cy2025 arm64 | 262,311,936 | 82,373,632 | 344,667,356 |
+  | cy2026 amd64 | 247,902,208 | 84,188,672 | 332,072,890 |
+  | cy2026 arm64 | 256,081,920 | 79,249,408 | 335,312,937 |
+  | cy2027 amd64 | 315,908,096 | 106,739,200 | 422,629,705 |
+  | cy2027 arm64 | 333,832,192 | 103,256,064 | 437,070,594 |
+
+- Base layers unpacked: Rocky 8.10 minimal is 104,292,352 bytes (amd64) and 109,686,784 (arm64); Rocky 9.8 minimal is 173,113,344 and 182,460,416.
+- `scripts/validate_image.py` passed all 35 checks on all six `cy<year>-<arch>` images with the new metric and budgets.
+- With the CY2026 arm64 budget lowered to 256,000,000 bytes, below its measurement, the size check failed as expected. The budget was then restored.
+
+Follow-up:
+
+- Possible reductions, not yet made: NumPy's test suite (15 MB per image), CPython's `_test*` extension modules (about 1 MB), and, in Phase 4, a trimmed Rocky 9 runtime (`/usr/share/locale` alone is 41 MB).
+
 ## 2026-11-02: Pass The Phase 3 Pre-Merge Checks
 
 Request:

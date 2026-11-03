@@ -36,7 +36,7 @@ Each image was checked on `linux/amd64` and `linux/arm64` with `scripts/validate
 - unresolved libraries and excluded components;
 - EXR, TIFF, PNG, and JPEG round trips, `maketx`, a NumPy read, and NumPy linear algebra;
 - an OCIO ACES2065-1 to ACEScg conversion;
-- the size budget.
+- the unpacked size against its budget.
 
 Other image formats that OIIO builds in without extra libraries may also work, but they are not checked.
 
@@ -129,20 +129,24 @@ CY2024 is still in the platform's support window, but there is no image for it:
 
 ## Verified Images
 
-Sizes are uncompressed, from `docker image inspect` after a container has run. The image IDs are from local builds, tagged `cy<year>-<arch>` for testing; the images are not published to a registry, so there are no registry digests. Building with the bake file's own tags or the plain `docker build` gives images with the same layers and config but a different local image ID. The size budgets are in [build/image-size-budgets.json](../build/image-size-budgets.json).
+The unpacked size is the disk space the image takes once pulled: the sum of its layer sizes, from `docker history --human=false`. The validator checks it against the budgets in [build/image-size-budgets.json](../build/image-size-budgets.json). The compressed size, from `docker save` with Docker Desktop's containerd image store, is close to the download size.
 
-| Image | Platform | Image ID | Size |
-| --- | --- | --- | --- |
-| cy2025 | linux/amd64 | `sha256:19fb8c182f7b2eb2ba40818e2d4469de21bb9dfcb8e8e95d066e968b4bd9af58` | 361 MB |
-| cy2025 | linux/arm64 | `sha256:2310be2c93c88cbaf21dc5b0f115c4727a7c9e6fa142ee897ab1be25c2c3668a` | 345 MB |
-| cy2026 | linux/amd64 | `sha256:b91701f9e6f2431ef91f7e6422db14d6691a22198a03967d30431cc9a4effe75` | 332 MB |
-| cy2026 | linux/arm64 | `sha256:63d014790cc84283a2b260521abab3fd52449b91919a108a9f08b33bbd6b8a35` | 335 MB |
-| cy2027 | linux/amd64 | `sha256:c4f9d81ef5cdef07c08c2a1b7173cbd880d3040a2cff5e3bdd5c2f3d1d737fa8` | 423 MB |
-| cy2027 | linux/arm64 | `sha256:2ecc113fb1a0120a4b70210c0982e24d2afbb59e28a6f6532d87f5717f4126fa` | 437 MB |
+`docker image inspect` reports a larger `.Size` on Docker Desktop, because its containerd image store adds the compressed layers to the unpacked ones. Use the figures here, not that one.
+
+The image IDs are from local builds, tagged `cy<year>-<arch>` for testing; the images are not published to a registry, so there are no registry digests. Building with the bake file's own tags or the plain `docker build` gives images with the same layers and config but a different local image ID.
+
+| Image | Platform | Image ID | Unpacked | Compressed |
+| --- | --- | --- | --- | --- |
+| cy2025 | linux/amd64 | `sha256:19fb8c182f7b2eb2ba40818e2d4469de21bb9dfcb8e8e95d066e968b4bd9af58` | 272 MB | 89 MB |
+| cy2025 | linux/arm64 | `sha256:2310be2c93c88cbaf21dc5b0f115c4727a7c9e6fa142ee897ab1be25c2c3668a` | 262 MB | 82 MB |
+| cy2026 | linux/amd64 | `sha256:b91701f9e6f2431ef91f7e6422db14d6691a22198a03967d30431cc9a4effe75` | 248 MB | 84 MB |
+| cy2026 | linux/arm64 | `sha256:63d014790cc84283a2b260521abab3fd52449b91919a108a9f08b33bbd6b8a35` | 256 MB | 79 MB |
+| cy2027 | linux/amd64 | `sha256:c4f9d81ef5cdef07c08c2a1b7173cbd880d3040a2cff5e3bdd5c2f3d1d737fa8` | 316 MB | 107 MB |
+| cy2027 | linux/arm64 | `sha256:2ecc113fb1a0120a4b70210c0982e24d2afbb59e28a6f6532d87f5717f4126fa` | 334 MB | 103 MB |
 
 The amd64 images were built and checked under emulation on an arm64 host. They have not yet been run on x86-64 hardware.
 
-CY2027 is about 90–100 MB larger than CY2026 because of its base: Rocky Linux 9.8 minimal is 242 MB, against 147 MB for Rocky 8.10 minimal. `/opt/vfx` is 140–146 MB in every year (arm64, measured with `du`).
+Each image is its Rocky Linux minimal base plus `/opt/vfx`. Unpacked, the Rocky 8.10 minimal base is 104 MB on amd64 and 110 MB on arm64, and the Rocky 9.8 minimal base is 173 MB and 182 MB. That base accounts for almost all of the difference between CY2027 and CY2026. `/opt/vfx` is 140–146 MB in every year (arm64, measured with `du`).
 
 ## Annual Maintenance
 

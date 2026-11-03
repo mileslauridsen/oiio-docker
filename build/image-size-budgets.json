@@ -1,19 +1,19 @@
 {
   "schema_version": 1,
-  "metric": "docker image inspect .Size (uncompressed image bytes, measured after a container has run)",
-  "basis": "Measured image size plus about 5% headroom; revise deliberately when contents or bases change.",
+  "metric": "unpacked image bytes: the sum of the layer sizes from docker history --human=false",
+  "basis": "Measured unpacked size plus about 5% headroom; revise deliberately when contents or bases change.",
   "budgets": {
     "cy2025": {
-      "linux/amd64": 379000000,
-      "linux/arm64": 362000000
+      "linux/amd64": 286000000,
+      "linux/arm64": 276000000
     },
     "cy2026": {
-      "linux/amd64": 349000000,
-      "linux/arm64": 352000000
+      "linux/amd64": 261000000,
+      "linux/arm64": 269000000
     },
     "cy2027": {
-      "linux/amd64": 444000000,
-      "linux/arm64": 459000000
+      "linux/amd64": 332000000,
+      "linux/arm64": 351000000
     }
   }
 }
