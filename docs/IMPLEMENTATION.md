@@ -2,6 +2,34 @@
 
 Record decisions that change project direction, specifications, runtime behavior, tests, validation, dependencies, deployment, or architecture. Link to plans rather than duplicating their details.
 
+## 2026-11-02: Pass The Phase 3 Pre-Merge Checks
+
+Request:
+
+- Run the pre-merge checks.
+
+Decision:
+
+- Mark Phase 3 complete. Every acceptance criterion now has evidence, including the bake file's own tags, the plain README build, and the interactive shell.
+
+Affected areas:
+
+- The Phase 3 plan, the roadmap, PLATFORMS.md, and this log. No build input changed.
+
+Validation:
+
+- `docker buildx bake --set '*.platform=<platform>' --load cy2025 cy2026 cy2027` with the bake file's own tags, amd64 first and then arm64. Every step came from cache, and the tags `cy2025`, `cy2026`, `latest`, and `cy2027` were applied.
+  - `scripts/validate_image.py` passed all 35 checks on all six images under those tags.
+  - Each image's layers, creation time, and config match the recorded `cy<year>-<arch>` image exactly. Only the local image ID differs. amd64 was compared through a second cached bake under scratch tags, because the untagged amd64 images had been removed when arm64 took over the tags.
+- The README's `docker build -t algernon_vfx/oiio .` built a native arm64 image from cache (`sha256:4e972319…ec92c9`). It has the same layers and config as `cy2026-arm64` and passed all 35 CY2026 checks.
+- The README's `docker run -it --entrypoint='bash' algernon_vfx/oiio`, run through a pseudo-terminal, opened a prompt as `algernon` on `/dev/pts/0` in `/home/algernon`. `oiiotool --version` printed 3.1.19.0, and Python imported OIIO 3.1.19.0 and OCIO 2.5.2.
+- The local `algernon_vfx/oiio:cy2025`, `cy2026`, `cy2027`, and `latest` tags now point at the arm64 images.
+
+Follow-up:
+
+- Merge `feature/reference-platform-matrix` to `master` when requested.
+- Phase 4: the remaining reproducibility items in the CY2026 entry, including the differing image IDs from identical layers.
+
 ## 2026-11-02: Retire The CY2021 Recipe
 
 Request:

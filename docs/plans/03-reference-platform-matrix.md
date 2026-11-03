@@ -166,13 +166,13 @@ Build commands name the platform explicitly, for example `docker buildx bake --s
 
 ## Status
 
-Status: in progress.
+Status: complete.
 
 - Steps 1 and 2 are complete for CY2026. `algernon_vfx/oiio:cy2026` builds for `linux/amd64` and `linux/arm64` from [build/locks/cy2026.json](../../build/locks/cy2026.json) and passes all 35 validator checks on both. The results are in the [implementation log](../IMPLEMENTATION.md).
 - Step 3 is complete. `algernon_vfx/oiio:cy2025` and `cy2027` build for both architectures from [build/locks/cy2025.json](../../build/locks/cy2025.json) and [build/locks/cy2027.json](../../build/locks/cy2027.json) and pass all 35 validator checks. CY2026 and CY2027 were rebuilt and re-validated after each later Dockerfile change. CY2024 is not built because OIIO 2.5 requires Boost; see the target matrix.
-- Step 4 is complete. [docs/PLATFORMS.md](../PLATFORMS.md) records each year's specified and verified versions, components left out, deviations, image IDs and sizes, and the annual maintenance procedure. The README and the mission link to it. The README's bake commands with the bake file's own tags have not yet been run; that check remains before merging.
+- Step 4 is complete. [docs/PLATFORMS.md](../PLATFORMS.md) records each year's specified and verified versions, components left out, deviations, image IDs and sizes, and the annual maintenance procedure. The README and the mission link to it.
 - Step 5 is complete. `legacy/Dockerfile.cy2021` is removed; it is identical to the root `Dockerfile` at commit `be6675c`, where it remains recoverable. Its Phase 2 evidence stays in the [build verification plan](02-build-verification.md) and the [implementation log](../IMPLEMENTATION.md). No build file references `centos:centos7` or an ASWF image.
-- Remaining before Phase 3 is complete: build every year with the bake file's own tags, and rerun the README's plain `docker build` and interactive shell.
+- Pre-merge checks passed. `docker buildx bake` with the bake file's own tags built `cy2025`, `cy2026` (also `latest`), and `cy2027` for both architectures, each passing all 35 checks with the same layers and config as the recorded images. The README's plain `docker build` produced a native arm64 CY2026 image that passed all 35 checks, and its interactive shell opened as `algernon`.
 - CY2025 deviations from this plan, recorded in the [implementation log](../IMPLEMENTATION.md):
   - OIIO is 3.1.19.0, the same release as CY2026, in place of ASWF's 3.1.6.2 from the same series.
   - OCIO 2.4's helper libraries use CY2026's newer releases rather than OCIO 2.4's older recommendations, and pybind11 is 2.13.6.

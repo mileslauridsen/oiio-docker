@@ -129,7 +129,7 @@ CY2024 is still in the platform's support window, but there is no image for it:
 
 ## Verified Images
 
-Sizes are uncompressed, from `docker image inspect` after a container has run. The image IDs are from local builds, tagged `cy<year>-<arch>` for testing; the images are not published to a registry, so there are no registry digests. The size budgets are in [build/image-size-budgets.json](../build/image-size-budgets.json).
+Sizes are uncompressed, from `docker image inspect` after a container has run. The image IDs are from local builds, tagged `cy<year>-<arch>` for testing; the images are not published to a registry, so there are no registry digests. Building with the bake file's own tags or the plain `docker build` gives images with the same layers and config but a different local image ID. The size budgets are in [build/image-size-budgets.json](../build/image-size-budgets.json).
 
 | Image | Platform | Image ID | Size |
 | --- | --- | --- | --- |
