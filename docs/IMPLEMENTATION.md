@@ -2,6 +2,52 @@
 
 Record decisions that change project direction, specifications, runtime behavior, tests, validation, dependencies, deployment, or architecture. Link to plans rather than duplicating their details.
 
+## 2026-11-02: Build And Verify CY2025 On Rocky Linux 8
+
+Request:
+
+- Continue Phase 3 Step 3 with CY2025.
+
+Decision:
+
+- CY2025 specifies glibc 2.28, gcc 11.2.1, C++17, Python 3.11, NumPy 1.26, OCIO 2.4, OpenEXR 3.3, Imath 3.1, and ACES 2.0. Build it on the same Rocky Linux 8.10 bases as CY2026, with `gcc-toolset-11` 11.2.1-9.2.
+- Lock 20 source archives and 2 wheels in [build/locks/cy2025.json](../build/locks/cy2025.json):
+  - Newest patch releases: CPython 3.11.18, NumPy 1.26.4 (`manylinux_2_17` wheels), Imath 3.1.12, OpenEXR 3.3.15, and OCIO 2.4.2.
+  - OIIO 3.1.19.0, the same release as CY2026. ASWF's CY2025 pin, 3.1.6.2, is in the same series, and 3.1 accepts OCIO 2.4, OpenEXR 3.3, Imath 3.1, and C++17.
+  - OCIO 2.4.2 recommends older helper releases (expat 2.5.0, yaml-cpp 0.7.0, zlib 1.2.13, and minizip-ng 3.0.7). Use CY2026's newer, security-patched releases instead: expat 2.7.2, yaml-cpp 0.8.0, zlib 1.3.1, and minizip-ng 4.0.10. Each meets OCIO 2.4's minimum, and OCIO uses minizip-ng's native API, which 4.x keeps.
+  - pybind11 2.13.6, the newest 2.x. OCIO 2.4 recommends 2.12.1 and OIIO 3.1 accepts 2.7 to 3.0.
+  - libdeflate 1.18. OpenEXR 3.3 does not vendor libdeflate; with internal deflate it clones this tag at configure time, which `--network=none` blocks. The Dockerfile points CMake's `FETCHCONTENT_SOURCE_DIR_DEFLATE` at the locked source when the lock includes it.
+- Validator corrections found by CY2025, with no change in what they protect:
+  - Imath 3.1 names its library from its ABI version (`libImath-3_1.so.29.11.0`), so check the series in the library name. `--buildinfo` already checks the exact release.
+  - NumPy 1.26's wheel-bundled OpenBLAS finds `libgfortran` only through the extension that loads it, so `ldd` on the bundled library alone reported it missing. Resolve libraries in a `*.libs` directory from their own directory, and exercise NumPy's linear algebra in the version probe.
+
+Affected areas:
+
+- `Dockerfile` (OpenEXR step), `docker-bake.hcl` (target `cy2025`), `build/locks/cy2025.json`, `build/image-size-budgets.json`, `scripts/validate_image.py`, the README, the Phase 3 plan, the roadmap, and this log.
+
+Validation:
+
+- arm64 builds natively in about 4 minutes; amd64 builds under emulation in about 12 minutes. OpenEXR's configure step used the locked libdeflate with no network.
+- `scripts/validate_image.py` passed all 35 checks on both images:
+  - `cy2025-amd64`: `sha256:19fb8c182f7b2eb2ba40818e2d4469de21bb9dfcb8e8e95d066e968b4bd9af58`, 360,809,384 bytes.
+  - `cy2025-arm64`: `sha256:2310be2c93c88cbaf21dc5b0f115c4727a7c9e6fa142ee897ab1be25c2c3668a`, 344,667,356 bytes.
+- What the checks confirmed:
+  - `oiiotool --buildinfo` reports OIIO 3.1.19.0 with gcc 11.2 and C++17, plus Imath 3.1.12, OCIO 2.4.2, OpenEXR 3.3.15, libjpeg-turbo 3.1.2, PNG 1.6.50, TIFF 4.7.1, zlib 1.3.1, fmt 12.1.0, pybind11 2.13.6, and Python 3.11.18.
+  - NumPy is 1.26.4, and the runtime glibc is 2.28.
+  - The highest symbol versions required are `GLIBC_2.28` and `GLIBCXX_3.4.22`, within Rocky 8's `GLIBCXX_3.4.25`.
+  - Image I/O, `maketx`, the NumPy read and linear algebra, and the OCIO ACES conversion pass. amd64 OIIO builds `sse2` and arm64 builds `neon`.
+- ACES: OCIO 2.4's built-in configs are all ACES 1.3; the default is `cg-config-v2.2.0_aces-v1.3_ocio-v2.4`. OCIO 2.4 does provide the ACES 2.0 output transforms (for example `ACES-OUTPUT - ACES2065-1_to_CIE-XYZ-D65 - SDR-100nit-REC709_2.0`), so an external ACES 2.0 config can use them.
+- amd64 is 16 MB larger than arm64, mostly NumPy 1.26's bundled x86-64 OpenBLAS. The budgets are about 5% above the measured sizes.
+- The OpenEXR step's change invalidated the CY2026 and CY2027 caches, so both were rebuilt for both architectures and passed all 35 checks again at their previous sizes:
+  - `cy2026-amd64` `sha256:b91701f9e6f2431ef91f7e6422db14d6691a22198a03967d30431cc9a4effe75`; `cy2026-arm64` `sha256:63d014790cc84283a2b260521abab3fd52449b91919a108a9f08b33bbd6b8a35`.
+  - `cy2027-amd64` `sha256:c4f9d81ef5cdef07c08c2a1b7173cbd880d3040a2cff5e3bdd5c2f3d1d737fa8`; `cy2027-arm64` `sha256:2ecc113fb1a0120a4b70210c0982e24d2afbb59e28a6f6532d87f5717f4126fa`.
+
+Follow-up:
+
+- Phase 3 Step 3: CY2024, the only year on OIIO 2.5, with ACES 1.3.
+- `docs/PLATFORMS.md` should explain how CY2025 users obtain an ACES 2.0 config.
+- Before merging: run the README's plain build and interactive shell, and build with the bake file's own tags.
+
 ## 2026-11-02: Build And Verify CY2027 On Rocky Linux 9
 
 Request:

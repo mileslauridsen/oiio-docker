@@ -112,11 +112,15 @@ RUN --network=none cd /src/imath && \
     cmake --build build -j${BUILD_JOBS} && \
     cmake --install build
 
-# Install OpenEXR with its vendored libdeflate, OpenJPH, and (3.5 and later) zstd
-RUN --network=none cd /src/openexr && \
+# Install OpenEXR with its vendored libdeflate, OpenJPH, and (3.5 and later) zstd. OpenEXR 3.3 does not
+# vendor libdeflate and would clone it, so point it at the locked source instead.
+RUN --network=none set -eu; \
+    DEFLATE=""; \
+    if [ -d /src/libdeflate ]; then DEFLATE="-DFETCHCONTENT_SOURCE_DIR_DEFLATE=/src/libdeflate"; fi; \
+    cd /src/openexr && \
     vfx-cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/opt/vfx -DBUILD_TESTING=OFF -DOPENEXR_BUILD_TOOLS=OFF \
         -DOPENEXR_BUILD_EXAMPLES=OFF -DOPENEXR_FORCE_INTERNAL_DEFLATE=ON -DOPENEXR_FORCE_INTERNAL_OPENJPH=ON \
-        -DOPENEXR_FORCE_INTERNAL_ZSTD=ON && \
+        -DOPENEXR_FORCE_INTERNAL_ZSTD=ON $DEFLATE && \
     cmake --build build -j${BUILD_JOBS} && \
     cmake --install build
 

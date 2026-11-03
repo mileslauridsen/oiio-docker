@@ -129,7 +129,8 @@ def main():
     check.expect("python version", check.docker("python3", "--version").strip().split()[1], pins["cpython"])
     probe = (
         "import json, os, re, numpy, OpenImageIO as oiio, PyOpenColorIO as ocio\n"
-        "imath = [m.group(1) for m in (re.match(r'libImath-\\d+_\\d+\\.so\\.\\d+\\.([\\d.]+)$', f)"
+        "assert numpy.allclose(numpy.linalg.inv(numpy.eye(3) * 2.0), numpy.eye(3) * 0.5)\n"
+        "imath = [m.group(1) + '.' + m.group(2) for m in (re.match(r'libImath-(\\d+)_(\\d+)\\.so$', f)"
         " for f in os.listdir('/opt/vfx/lib')) if m]\n"
         "print(json.dumps({'numpy': numpy.__version__, 'oiio': oiio.__version__, 'ocio': ocio.__version__,"
         " 'oiio_ocio': oiio.get_string_attribute('opencolorio_version'), 'imath': imath,"
@@ -140,7 +141,8 @@ def main():
     check.expect("python OpenImageIO version", versions["oiio"], pins["openimageio"])
     check.expect("python PyOpenColorIO version", versions["ocio"], pins["opencolorio"])
     check.expect("OIIO OpenColorIO dependency", versions["oiio_ocio"], pins["opencolorio"])
-    check.expect("installed Imath library", versions["imath"], [pins["imath"]])
+    # Imath's library file names carry its series (libImath-3_1.so); the exact release comes from --buildinfo.
+    check.expect("installed Imath library series", versions["imath"], [".".join(pins["imath"].split(".")[:2])])
     libraries = versions["libraries"]
     check.results["library_list"] = libraries
     match = re.search(r"OpenEXR ([\d.]+)", libraries)
@@ -182,6 +184,8 @@ def main():
     check.expect("excluded platform libraries present", excluded, [])
 
     # The minimal runtime has no find, so walk /opt/vfx with the image's own Python and ldd each ELF file.
+    # Libraries that wheels bundle in a *.libs directory rely on the extension that loads them for their
+    # neighbours' search path, so resolve those from their own directory.
     linkage = (
         "import os, subprocess\n"
         "count = 0\n"
@@ -194,8 +198,9 @@ def main():
         "            if handle.read(4) != b'\\x7fELF':\n"
         "                continue\n"
         "        count += 1\n"
+        "        env = dict(os.environ, LD_LIBRARY_PATH=root) if root.endswith('.libs') else None\n"
         "        out = subprocess.run(['ldd', path], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,"
-        " universal_newlines=True).stdout\n"
+        " universal_newlines=True, env=env).stdout\n"
         "        for line in out.splitlines():\n"
         "            if 'not found' in line:\n"
         "                print('MISSING', path, line.strip())\n"

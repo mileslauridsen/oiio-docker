@@ -168,7 +168,11 @@ Build commands name the platform explicitly, for example `docker buildx bake --s
 Status: in progress.
 
 - Steps 1 and 2 are complete for CY2026. `algernon_vfx/oiio:cy2026` builds for `linux/amd64` and `linux/arm64` from [build/locks/cy2026.json](../../build/locks/cy2026.json) and passes all 35 validator checks on both. The results are in the [implementation log](../IMPLEMENTATION.md).
-- Step 3 is in progress. `algernon_vfx/oiio:cy2027` builds for both architectures from [build/locks/cy2027.json](../../build/locks/cy2027.json) and passes all 35 validator checks. CY2026 was rebuilt and re-validated after the Dockerfile changes CY2027 needed. CY2024 and CY2025 have not started.
+- Step 3 is in progress. `algernon_vfx/oiio:cy2025` and `cy2027` build for both architectures from [build/locks/cy2025.json](../../build/locks/cy2025.json) and [build/locks/cy2027.json](../../build/locks/cy2027.json) and pass all 35 validator checks. CY2026 and CY2027 were rebuilt and re-validated after each later Dockerfile change. CY2024 has not started.
+- CY2025 deviations from this plan, recorded in the [implementation log](../IMPLEMENTATION.md):
+  - OIIO is 3.1.19.0, the same release as CY2026, in place of ASWF's 3.1.6.2 from the same series.
+  - OCIO 2.4's helper libraries use CY2026's newer releases rather than OCIO 2.4's older recommendations, and pybind11 is 2.13.6.
+  - OCIO 2.4 provides the ACES 2.0 output transforms, but its built-in configs are ACES 1.3, so an ACES 2.0 config must come from outside the image.
 - CY2027 deviations from this plan, recorded in the [implementation log](../IMPLEMENTATION.md):
   - OIIO 3.2 builds its Python bindings with nanobind, its new default, instead of pybind11.
   - OIIO 3.2 defaults amd64 SIMD to SSE4.2 (x86-64-v2), which Rocky Linux 9 already requires.

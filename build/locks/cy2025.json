@@ -1,0 +1,245 @@
+{
+  "lock_version": 1,
+  "platform_year": "CY2025",
+  "specification": {
+    "source": "https://vfxplatform.com/#reference-platform",
+    "read": "2026-11-02",
+    "glibc": "2.28",
+    "gcc": "11.2",
+    "cxx_standard": "17",
+    "python": "3.11",
+    "numpy": "1.26",
+    "opencolorio": "2.4",
+    "openexr": "3.3",
+    "imath": "3.1"
+  },
+  "toolchain": {
+    "builder_image": {
+      "reference": "rockylinux/rockylinux:8.10",
+      "index_digest": "sha256:e8a49c5403b687db05d4d67333fa45808fbe74f36e683cec7abb1f7d0f2338c6"
+    },
+    "runtime_image": {
+      "reference": "rockylinux/rockylinux:8.10-minimal",
+      "index_digest": "sha256:6d2ede107b4f005a638728711dae05d5fbbfd8abd521cecf5ab61196b361c965"
+    },
+    "gcc_toolset": "11",
+    "builder_packages": [
+      "gcc-toolset-11-gcc-c++-11.2.1-9.2.el8_9",
+      "cmake-3.26.5-2.el8"
+    ]
+  },
+  "dependencies": [
+    {
+      "name": "nasm",
+      "version": "3.02",
+      "url": "https://www.nasm.us/pub/nasm/releasebuilds/3.02/nasm-3.02.tar.xz",
+      "archive": "nasm-3.02.tar.xz",
+      "sha256": "87336eba53b4acfe917424ab5d500d2b0054d9f5148d35c2273ccf2cfb712f0d",
+      "source_root": "nasm-3.02",
+      "role": "build tool for libjpeg-turbo SIMD; not in Rocky's default repositories",
+      "checksum_provenance": "Locally computed SHA-256; matches the ffmpeg-docker lock for the same archive."
+    },
+    {
+      "name": "zlib",
+      "version": "1.3.1",
+      "url": "https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.xz",
+      "archive": "zlib-1.3.1.tar.xz",
+      "sha256": "38ef96b8dfe510d42707d9c781877914792541133e1870841463bfa73f883e32",
+      "source_root": "zlib-1.3.1",
+      "role": "shared; OCIO 2.4 requires >= 1.2.8, and 1.3.1 matches CY2026, while Rocky 8 ships 1.2.11",
+      "checksum_provenance": "Locally computed SHA-256 from the upstream release asset."
+    },
+    {
+      "name": "libjpeg-turbo",
+      "version": "3.1.2",
+      "url": "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/3.1.2/libjpeg-turbo-3.1.2.tar.gz",
+      "archive": "libjpeg-turbo-3.1.2.tar.gz",
+      "sha256": "8f0012234b464ce50890c490f18194f913a7b1f4e6a03d6644179fa0f867d0cf",
+      "source_root": "libjpeg-turbo-3.1.2",
+      "role": "shared; OIIO 3.1 requires >= 2.1 and defaults to 3.1.2, while Rocky 8 ships 1.5.3",
+      "checksum_provenance": "Locally computed SHA-256 from the upstream release asset."
+    },
+    {
+      "name": "libpng",
+      "version": "1.6.50",
+      "url": "https://github.com/pnggroup/libpng/archive/refs/tags/v1.6.50.tar.gz",
+      "archive": "libpng-1.6.50.tar.gz",
+      "sha256": "71158e53cfdf2877bc99bcab33641d78df3f48e6e0daad030afe9cb8c031aa46",
+      "source_root": "libpng-1.6.50",
+      "role": "shared; OIIO's default local-build version, built against the locked zlib",
+      "checksum_provenance": "Locally computed SHA-256 for the tag archive."
+    },
+    {
+      "name": "libtiff",
+      "version": "4.7.1",
+      "url": "https://download.osgeo.org/libtiff/tiff-4.7.1.tar.xz",
+      "archive": "tiff-4.7.1.tar.xz",
+      "sha256": "b92017489bdc1db3a4c97191aa4b75366673cb746de0dce5d7a749d5954681ba",
+      "source_root": "tiff-4.7.1",
+      "role": "shared; OIIO's default local-build version, built against the locked zlib and libjpeg-turbo to avoid two libjpeg.so.62 copies",
+      "checksum_provenance": "Locally computed SHA-256 from the upstream release archive."
+    },
+    {
+      "name": "cpython",
+      "version": "3.11.18",
+      "url": "https://www.python.org/ftp/python/3.11.18/Python-3.11.18.tar.xz",
+      "archive": "Python-3.11.18.tar.xz",
+      "sha256": "9120e0a653868f6e3698d36cdd99e5a58903ec9469e448f21d98f7b16d8fa290",
+      "source_root": "Python-3.11.18",
+      "role": "platform Python 3.11.x; built from source for one install layout across years",
+      "checksum_provenance": "Locally computed SHA-256 from python.org."
+    },
+    {
+      "name": "imath",
+      "version": "3.1.12",
+      "url": "https://github.com/AcademySoftwareFoundation/Imath/archive/refs/tags/v3.1.12.tar.gz",
+      "archive": "Imath-3.1.12.tar.gz",
+      "sha256": "8a1bc258f3149b5729c2f4f8ffd337c0e57f09096e4ba9784329f40c4a9035da",
+      "source_root": "Imath-3.1.12",
+      "role": "platform Imath 3.1.x; OCIO 2.4's recommended version",
+      "checksum_provenance": "Locally computed SHA-256 for the tag archive."
+    },
+    {
+      "name": "libdeflate",
+      "version": "1.18",
+      "url": "https://github.com/ebiggers/libdeflate/archive/refs/tags/v1.18.tar.gz",
+      "archive": "libdeflate-1.18.tar.gz",
+      "sha256": "225d982bcaf553221c76726358d2ea139bb34913180b20823c782cede060affd",
+      "source_root": "libdeflate-1.18",
+      "role": "sources compiled into OpenEXRCore; the tag OpenEXR 3.3 would otherwise clone",
+      "checksum_provenance": "Locally computed SHA-256 for the tag archive."
+    },
+    {
+      "name": "openexr",
+      "version": "3.3.15",
+      "url": "https://github.com/AcademySoftwareFoundation/openexr/archive/refs/tags/v3.3.15.tar.gz",
+      "archive": "openexr-3.3.15.tar.gz",
+      "sha256": "21bd9e029185f4da7f6a662be18a13ccaf698d5c9bd8964c40e0a4227cbc7e1b",
+      "source_root": "openexr-3.3.15",
+      "role": "platform OpenEXR 3.3.x; compiles the locked libdeflate into OpenEXRCore",
+      "checksum_provenance": "Locally computed SHA-256 for the tag archive."
+    },
+    {
+      "name": "expat",
+      "version": "2.7.2",
+      "url": "https://github.com/libexpat/libexpat/releases/download/R_2_7_2/expat-2.7.2.tar.xz",
+      "archive": "expat-2.7.2.tar.xz",
+      "sha256": "21b778b34ec837c2ac285aef340f9fb5fa063a811b21ea4d2412a9702c88995c",
+      "source_root": "expat-2.7.2",
+      "role": "static, linked into OCIO; OCIO 2.4 requires >= 2.4.1 and recommends 2.5.0, so use the CVE-fixed release CY2026 uses",
+      "checksum_provenance": "Locally computed SHA-256 from the upstream release asset."
+    },
+    {
+      "name": "yaml-cpp",
+      "version": "0.8.0",
+      "url": "https://github.com/jbeder/yaml-cpp/archive/refs/tags/0.8.0.tar.gz",
+      "archive": "yaml-cpp-0.8.0.tar.gz",
+      "sha256": "fbe74bbdcee21d656715688706da3c8becfd946d92cd44705cc6098bb23b3a16",
+      "source_root": "yaml-cpp-0.8.0",
+      "role": "static, linked into OCIO; OCIO 2.4 requires >= 0.6.3 and recommends 0.7.0, so use the release CY2026 uses",
+      "checksum_provenance": "Locally computed SHA-256 for the tag archive."
+    },
+    {
+      "name": "pystring",
+      "version": "1.1.4",
+      "url": "https://github.com/imageworks/pystring/archive/refs/tags/v1.1.4.tar.gz",
+      "archive": "pystring-1.1.4.tar.gz",
+      "sha256": "49da0fe2a049340d3c45cce530df63a2278af936003642330287b68cefd788fb",
+      "source_root": "pystring-1.1.4",
+      "role": "static, linked into OCIO; OCIO 2.4 requires >= 1.1.3",
+      "checksum_provenance": "Locally computed SHA-256 for the tag archive."
+    },
+    {
+      "name": "minizip-ng",
+      "version": "4.0.10",
+      "url": "https://github.com/zlib-ng/minizip-ng/archive/refs/tags/4.0.10.tar.gz",
+      "archive": "minizip-ng-4.0.10.tar.gz",
+      "sha256": "c362e35ee973fa7be58cc5e38a4a6c23cc8f7e652555daf4f115a9eb2d3a6be7",
+      "source_root": "minizip-ng-4.0.10",
+      "role": "static, linked into OCIO; OCIO 2.4 requires >= 3.0.6 and recommends 3.0.7, so use the release CY2026 uses",
+      "checksum_provenance": "Locally computed SHA-256 for the tag archive."
+    },
+    {
+      "name": "sse2neon",
+      "version": "227cc413fb2d50b2a10073087be96b59d5364aea",
+      "url": "https://codeload.github.com/DLTcollab/sse2neon/tar.gz/227cc413fb2d50b2a10073087be96b59d5364aea",
+      "archive": "sse2neon-227cc413fb2d50b2a10073087be96b59d5364aea.tar.gz",
+      "sha256": "3427a495743bb6fd1b5f9f806b80f57d67b1ac7ccf39a5f44aedd487fd7e6da1",
+      "source_root": "sse2neon-227cc413fb2d50b2a10073087be96b59d5364aea",
+      "role": "header used by OCIO SIMD on arm64; the commit OCIO 2.4.2's installer pins",
+      "checksum_provenance": "Locally computed SHA-256 for the immutable commit archive."
+    },
+    {
+      "name": "pybind11",
+      "version": "2.13.6",
+      "url": "https://github.com/pybind/pybind11/archive/refs/tags/v2.13.6.tar.gz",
+      "archive": "pybind11-2.13.6.tar.gz",
+      "sha256": "e08cb87f4773da97fa7b5f035de8763abc656d87d5773e62f6da0587d1f0ec20",
+      "source_root": "pybind11-2.13.6",
+      "role": "build-time headers for the OCIO and OIIO Python bindings; newest 2.x, since OCIO 2.4 recommends 2.12.1 and OIIO 3.1 accepts 2.7 to 3.0",
+      "checksum_provenance": "Locally computed SHA-256 for the tag archive."
+    },
+    {
+      "name": "opencolorio",
+      "version": "2.4.2",
+      "url": "https://github.com/AcademySoftwareFoundation/OpenColorIO/archive/refs/tags/v2.4.2.tar.gz",
+      "archive": "OpenColorIO-2.4.2.tar.gz",
+      "sha256": "2d8f2c47c40476d6e8cea9d878f6601d04f6d5642b47018eaafa9e9f833f3690",
+      "source_root": "OpenColorIO-2.4.2",
+      "role": "platform OpenColorIO 2.4.x",
+      "checksum_provenance": "Locally computed SHA-256 for the tag archive."
+    },
+    {
+      "name": "fmt",
+      "version": "12.1.0",
+      "url": "https://github.com/fmtlib/fmt/archive/refs/tags/12.1.0.tar.gz",
+      "archive": "fmt-12.1.0.tar.gz",
+      "sha256": "ea7de4299689e12b6dddd392f9896f08fb0777ac7168897a244a6d6085043fea",
+      "source_root": "fmt-12.1.0",
+      "role": "build-time headers for OIIO; OIIO 3.1's default local-build version",
+      "checksum_provenance": "Locally computed SHA-256 for the tag archive."
+    },
+    {
+      "name": "robin-map",
+      "version": "1.4.0",
+      "url": "https://github.com/Tessil/robin-map/archive/refs/tags/v1.4.0.tar.gz",
+      "archive": "robin-map-1.4.0.tar.gz",
+      "sha256": "7930dbf9634acfc02686d87f615c0f4f33135948130b8922331c16d90a03250c",
+      "source_root": "robin-map-1.4.0",
+      "role": "build-time headers for OIIO; OIIO 3.1's default local-build version",
+      "checksum_provenance": "Locally computed SHA-256 for the tag archive."
+    },
+    {
+      "name": "openimageio",
+      "version": "3.1.19.0",
+      "url": "https://github.com/AcademySoftwareFoundation/OpenImageIO/archive/refs/tags/v3.1.19.0.tar.gz",
+      "archive": "OpenImageIO-3.1.19.0.tar.gz",
+      "sha256": "b9318d660e736f40705abc68032ebb38a2dfcefc18bf66f9ba05671eeea7f0a2",
+      "source_root": "OpenImageIO-3.1.19.0",
+      "role": "newest 3.1 patch release; ASWF's CY2026 reference pin is 3.1.18.1",
+      "checksum_provenance": "Locally computed SHA-256 for the tag archive."
+    },
+    {
+      "name": "numpy",
+      "version": "1.26.4",
+      "kind": "wheel",
+      "platform": "linux/amd64",
+      "url": "https://files.pythonhosted.org/packages/3a/d0/edc009c27b406c4f9cbc79274d6e46d634d139075492ad055e3d68445925/numpy-1.26.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "archive": "numpy-1.26.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "sha256": "666dbfb6ec68962c033a450943ded891bed2d54e6755e35e5835d63f4f6931d5",
+      "role": "platform NumPy 1.26.x",
+      "checksum_provenance": "Publisher SHA-256 from the PyPI JSON API."
+    },
+    {
+      "name": "numpy",
+      "version": "1.26.4",
+      "kind": "wheel",
+      "platform": "linux/arm64",
+      "url": "https://files.pythonhosted.org/packages/79/ae/7e5b85136806f9dadf4878bf73cf223fe5c2636818ba3ab1c585d0403164/numpy-1.26.4-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl",
+      "archive": "numpy-1.26.4-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl",
+      "sha256": "7ab55401287bfec946ced39700c053796e7cc0e3acbef09993a9ad2adba6ca6e",
+      "role": "platform NumPy 1.26.x",
+      "checksum_provenance": "Publisher SHA-256 from the PyPI JSON API."
+    }
+  ]
+}

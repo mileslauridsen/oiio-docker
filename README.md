@@ -12,6 +12,8 @@ It is built for `linux/amd64` and `linux/arm64`. Versions and checksums are lock
 
 A **CY2027** image (`cy2027`, effective 2027-01-01) is also available. It uses Rocky Linux 9 (glibc 2.34), gcc 14.2 with C++20, Python 3.13 with NumPy 2.4, OpenColorIO 2.6, OpenEXR 3.5, Imath 3.2, and OpenImageIO 3.2. Its lock is [build/locks/cy2027.json](build/locks/cy2027.json).
 
+A **CY2025** image (`cy2025`) is also available. It uses Rocky Linux 8 (glibc 2.28), gcc 11.2 with C++17, Python 3.11 with NumPy 1.26, OpenColorIO 2.4, OpenEXR 3.3, Imath 3.1, and OpenImageIO 3.1. Its lock is [build/locks/cy2025.json](build/locks/cy2025.json).
+
 ## Building with docker
 Build for the Docker engine's own platform:
 
@@ -21,7 +23,7 @@ Build one platform explicitly with the bake file (`cy2026` is also tagged `lates
 
 ```docker buildx bake --set '*.platform=linux/arm64' --load cy2026```
 
-Use `linux/amd64` for the x86-64 image. On an arm64 host such as Apple silicon, it builds under emulation. Replace `cy2026` with `cy2027` to build the CY2027 image.
+Use `linux/amd64` for the x86-64 image. On an arm64 host such as Apple silicon, it builds under emulation. Replace `cy2026` with `cy2025` or `cy2027` to build another year's image.
 
 ## Running image in an interactive bash shell
 ```docker run -it --entrypoint='bash' algernon_vfx/oiio```
