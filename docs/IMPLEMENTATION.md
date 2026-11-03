@@ -2,6 +2,34 @@
 
 Record decisions that change project direction, specifications, runtime behavior, tests, validation, dependencies, deployment, or architecture. Link to plans rather than duplicating their details.
 
+## 2026-11-02: Do Not Build CY2024
+
+Request:
+
+- Skip CY2024 and record why.
+
+Decision:
+
+- Build CY2025–CY2027 only, which completes Phase 3 Step 3. No `cy2024` lock, bake target, or size budget is added.
+- Why:
+  - CY2024's OIIO series is 2.5; ASWF's CY2024 pin is 2.5.19.1, the newest 2.5 release. OIIO 2.5 calls `checked_find_package(Boost REQUIRED VERSION_MIN 1.53)` for `thread`, and for `filesystem` when the standard library is not used. Every image in this project leaves Boost out.
+  - Moving CY2024 to OIIO 3.x would remove Boost, but the image would no longer provide the OIIO 2.5 interface that CY2024 software builds against.
+  - CY2024 is the first of the four years to leave the support window, on 2028-01-01.
+- Inspection before the decision (static, nothing built): OIIO 2.5.19.1, OCIO 2.3.2, and OpenEXR 3.2.12 are the newest releases in their series. OIIO 2.5 is tested with fmt only through 10.2, so CY2024 would also have needed an older fmt than the other years.
+
+Affected areas:
+
+- The README, the Phase 3 and Phase 4 plans, the roadmap, and this log. The Phase 4 CI matrix is now 6 image jobs.
+
+Validation:
+
+- Documentation only; no image was built for CY2024.
+
+Follow-up:
+
+- `docs/PLATFORMS.md` (Phase 3 Step 4) should list CY2024 as unsupported and say why.
+- Before merging: run the README's plain build and interactive shell, and build with the bake file's own tags.
+
 ## 2026-11-02: Build And Verify CY2025 On Rocky Linux 8
 
 Request:
@@ -11,7 +39,7 @@ Request:
 Decision:
 
 - CY2025 specifies glibc 2.28, gcc 11.2.1, C++17, Python 3.11, NumPy 1.26, OCIO 2.4, OpenEXR 3.3, Imath 3.1, and ACES 2.0. Build it on the same Rocky Linux 8.10 bases as CY2026, with `gcc-toolset-11` 11.2.1-9.2.
-- Lock 20 source archives and 2 wheels in [build/locks/cy2025.json](../build/locks/cy2025.json):
+- Lock 19 source archives and 2 wheels in [build/locks/cy2025.json](../build/locks/cy2025.json):
   - Newest patch releases: CPython 3.11.18, NumPy 1.26.4 (`manylinux_2_17` wheels), Imath 3.1.12, OpenEXR 3.3.15, and OCIO 2.4.2.
   - OIIO 3.1.19.0, the same release as CY2026. ASWF's CY2025 pin, 3.1.6.2, is in the same series, and 3.1 accepts OCIO 2.4, OpenEXR 3.3, Imath 3.1, and C++17.
   - OCIO 2.4.2 recommends older helper releases (expat 2.5.0, yaml-cpp 0.7.0, zlib 1.2.13, and minizip-ng 3.0.7). Use CY2026's newer, security-patched releases instead: expat 2.7.2, yaml-cpp 0.8.0, zlib 1.3.1, and minizip-ng 4.0.10. Each meets OCIO 2.4's minimum, and OCIO uses minizip-ng's native API, which 4.x keeps.

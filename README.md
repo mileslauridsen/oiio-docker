@@ -14,6 +14,8 @@ A **CY2027** image (`cy2027`, effective 2027-01-01) is also available. It uses R
 
 A **CY2025** image (`cy2025`) is also available. It uses Rocky Linux 8 (glibc 2.28), gcc 11.2 with C++17, Python 3.11 with NumPy 1.26, OpenColorIO 2.4, OpenEXR 3.3, Imath 3.1, and OpenImageIO 3.1. Its lock is [build/locks/cy2025.json](build/locks/cy2025.json).
 
+There is no **CY2024** image. CY2024's OpenImageIO series, 2.5, requires Boost, which these images leave out, and moving it to OpenImageIO 3 would break compatibility with software built against 2.5.
+
 ## Building with docker
 Build for the Docker engine's own platform:
 

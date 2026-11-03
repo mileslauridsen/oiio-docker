@@ -6,7 +6,7 @@ Make every reference-platform image traceable to exact inputs, and verify it aut
 
 ## Current State
 
-- [Phase 3](03-reference-platform-matrix.md) plans the `cy2024`–`cy2027` images.
+- [Phase 3](03-reference-platform-matrix.md) plans the `cy2025`–`cy2027` images; CY2024 is not built.
   - Base images: digest-pinned Rocky Linux.
   - Compiler: Rocky's `gcc-toolset`.
   - Sources: checksum-verified upstream releases.
@@ -53,11 +53,11 @@ Make every reference-platform image traceable to exact inputs, and verify it aut
 **CPU baselines**
 
 - Set explicit, generic CPU baselines rather than tuning for the build host. Rocky Linux 9 itself requires x86-64-v2 on amd64, so CY2027 cannot go below that.
-- Choose the CY2024–CY2026 amd64 baseline and OIIO's `USE_SIMD` setting from evidence, and record them. Confirm them against production workers before deployment.
+- Choose the CY2025–CY2026 amd64 baseline and OIIO's `USE_SIMD` setting from evidence, and record them. Confirm them against production workers before deployment.
 
 **CI scope**
 
-- CI covers the full year-by-architecture matrix: 8 image jobs.
+- CI covers the full year-by-architecture matrix: 6 image jobs.
 - Watch build minutes and the default 10 GB repository cache limit for GitHub Actions. Narrow the cache, not the matrix, if the limit is exceeded.
 - Registry publication, image signing and attestations, and release automation remain out of scope.
 
@@ -166,7 +166,7 @@ Steps:
 - [ ] 5. Collect the license and notice files for every shipped component, including statically linked dependencies, into the runtime image.
 - [ ] 6. Measure each year and architecture using `docker image inspect .Size`, the same metric ffmpeg-docker uses, and set a budget for each in `image-size-budgets.json`. Fail on an overrun that has not been reviewed.
 
-Completion evidence: the validator passes for all eight images, and fails on a deliberate version mismatch, a missing library, a leftover compiler, and a size overrun.
+Completion evidence: the validator passes for all six images, and fails on a deliberate version mismatch, a missing library, a leftover compiler, and a size overrun.
 
 ### Task 5: Make Builds Reproducible
 
@@ -200,7 +200,7 @@ Deliverables:
 Steps:
 
 - [ ] 1. Add a `lock-validation` job that runs `validate_lock.py` and Python syntax checks on `ubuntu-24.04`.
-- [ ] 2. Add an `image-validation` job: a matrix of `cy2024`–`cy2027` × `linux/amd64` (`ubuntu-24.04`) and `linux/arm64` (`ubuntu-24.04-arm`), with `fail-fast: false`.
+- [ ] 2. Add an `image-validation` job: a matrix of `cy2025`–`cy2027` × `linux/amd64` (`ubuntu-24.04`) and `linux/arm64` (`ubuntu-24.04-arm`), with `fail-fast: false`.
   - It uses the pinned Buildx and BuildKit, and a GitHub Actions cache scoped to each year, architecture, and branch.
   - It runs `validate_image.py` and `smoke_images.py`.
 - [ ] 3. Add a `cold-reproducibility` job that runs on the weekly schedule and on manual runs, covering the same matrix with `reproducible_build.py`.
@@ -213,7 +213,7 @@ Steps:
 - [ ] 6. Measure job durations and cache use. Adjust cache scope or mode, or set timeouts, from evidence.
 - [ ] 7. After the user pushes the branch, confirm a hosted run passes. Separately, confirm a manual run of the cold-reproducibility job.
 
-Completion evidence: a recorded hosted run in which all eight image jobs pass, and a recorded manual cold-reproducibility run. CI fails on an invalid checksum, a version mismatch, a missing capability, a glibc limit violation, and a size overrun.
+Completion evidence: a recorded hosted run in which all six image jobs pass, and a recorded manual cold-reproducibility run. CI fails on an invalid checksum, a version mismatch, a missing capability, a glibc limit violation, and a size overrun.
 
 ## Validation
 

@@ -43,6 +43,8 @@ Step 1 chooses the exact patch release for each "x" version and records it with 
 
 OIIO is not part of the platform specification. The starting OIIO pins are the releases ASWF chose for each year, which are a known-compatible reference. They are not a dependency on ASWF images. The OIIO, OCIO, and OpenEXR release tags were confirmed upstream with `git ls-remote`.
 
+CY2024 is not built (decided 2026-11-02). Its OIIO series, 2.5, requires Boost: `find_package(Boost REQUIRED)` for `thread`, and for `filesystem` too unless the standard library provides it. Every image here leaves Boost out. Moving CY2024 to OIIO 3.x would remove Boost but would no longer match the OIIO 2.5 interface that CY2024 software was built against. CY2024 is also the first year to leave the support window, on 2028-01-01. Its column stays in the table for reference.
+
 ## Decisions And Boundaries
 
 **Base images and sources**
@@ -71,10 +73,10 @@ OIIO is not part of the platform specification. The starting OIIO pins are the r
 
 **Tags and build interface**
 
-- Build the years in the platform's support window as of 2027-01-01, when this work is expected to land: CY2024–CY2027. Exclude CY2023, which leaves the window on 2027-01-01. Include CY2027 now because it is Final and studios begin targeting it ahead of its effective date.
+- Build the years in the platform's support window as of 2027-01-01, when this work is expected to land: CY2024–CY2027. Exclude CY2023, which leaves the window on 2027-01-01. Include CY2027 now because it is Final and studios begin targeting it ahead of its effective date. CY2024 was later excluded too, because its OIIO series requires Boost (see the target matrix), so the images are CY2025–CY2027.
 - Tag images `algernon_vfx/oiio:cy<year>`. Keep `algernon_vfx/oiio:latest` pointing at the current calendar year's platform: CY2026 until 2027-01-01, then CY2027.
 - The plain `docker build -t algernon_vfx/oiio .` command in the README must keep working. It builds the current year, using defaults from the Dockerfile's build arguments.
-- Use one parameterized Dockerfile. A per-year lock, `build/locks/cy<year>.json`, records the pinned versions, URLs, and checksums in the format defined by [Phase 4](04-locked-inputs-and-ci.md). A `docker-bake.hcl` file declares the targets `cy2024` through `cy2027` and a `default` group.
+- Use one parameterized Dockerfile. A per-year lock, `build/locks/cy<year>.json`, records the pinned versions, URLs, and checksums in the format defined by [Phase 4](04-locked-inputs-and-ci.md). A `docker-bake.hcl` file declares the targets `cy2025` through `cy2027` and a `default` group.
 - Keep the non-root `algernon` user and the interactive Bash entry point.
 
 **Platforms and scope**
@@ -109,12 +111,11 @@ OIIO is not part of the platform specification. The starting OIIO pins are the r
 
 ### 3. Extend To The Remaining Years
 
-- Add the CY2024, CY2025, and CY2027 targets.
-  - CY2024 and CY2025 use `gcc-toolset-11` with C++17.
-  - CY2024 is the only year on the OIIO 2.5 series.
+- Add the CY2025 and CY2027 targets. CY2024 is not built; see the target matrix.
+  - CY2025 uses `gcc-toolset-11` with C++17.
   - CY2027 is the only year on Rocky Linux 9.
 - Build and verify each year on both architectures.
-- Completion evidence: all four tags pass verification on both architectures, within the size budget, with digests recorded.
+- Completion evidence: all three tags pass verification on both architectures, within the size budget, with digests recorded.
 
 ### 4. Document The Support Contract
 
@@ -156,7 +157,7 @@ Build commands name the platform explicitly, for example `docker buildx bake --s
 
 ## Acceptance Criteria
 
-- `docker buildx bake` builds `algernon_vfx/oiio:cy2024` through `cy2027` for `linux/amd64` and `linux/arm64`, from digest-pinned Rocky Linux bases and checksum-verified sources. No ASWF image is used.
+- `docker buildx bake` builds `algernon_vfx/oiio:cy2025` through `cy2027` for `linux/amd64` and `linux/arm64`, from digest-pinned Rocky Linux bases and checksum-verified sources. No ASWF image is used.
 - Every image passes the Phase 2 checks and the year verification script as the `algernon` user, and stays within the recorded size budget.
 - Every shipped component named by the platform matches that year's specification. Components left out are listed in `docs/PLATFORMS.md`.
 - Every image's runtime glibc equals its year's floor. No shipped binary requires a newer glibc or a newer `libstdc++` than the base OS provides.
@@ -168,7 +169,7 @@ Build commands name the platform explicitly, for example `docker buildx bake --s
 Status: in progress.
 
 - Steps 1 and 2 are complete for CY2026. `algernon_vfx/oiio:cy2026` builds for `linux/amd64` and `linux/arm64` from [build/locks/cy2026.json](../../build/locks/cy2026.json) and passes all 35 validator checks on both. The results are in the [implementation log](../IMPLEMENTATION.md).
-- Step 3 is in progress. `algernon_vfx/oiio:cy2025` and `cy2027` build for both architectures from [build/locks/cy2025.json](../../build/locks/cy2025.json) and [build/locks/cy2027.json](../../build/locks/cy2027.json) and pass all 35 validator checks. CY2026 and CY2027 were rebuilt and re-validated after each later Dockerfile change. CY2024 has not started.
+- Step 3 is complete. `algernon_vfx/oiio:cy2025` and `cy2027` build for both architectures from [build/locks/cy2025.json](../../build/locks/cy2025.json) and [build/locks/cy2027.json](../../build/locks/cy2027.json) and pass all 35 validator checks. CY2026 and CY2027 were rebuilt and re-validated after each later Dockerfile change. CY2024 is not built because OIIO 2.5 requires Boost; see the target matrix.
 - CY2025 deviations from this plan, recorded in the [implementation log](../IMPLEMENTATION.md):
   - OIIO is 3.1.19.0, the same release as CY2026, in place of ASWF's 3.1.6.2 from the same series.
   - OCIO 2.4's helper libraries use CY2026's newer releases rather than OCIO 2.4's older recommendations, and pybind11 is 2.13.6.
