@@ -1,34 +1,33 @@
 # oiio-docker
 Installation of OIIO and OCIO for use in a VFX pipeline, built to match the [VFX Reference Platform](https://vfxplatform.com/#reference-platform).
 
-The current image targets **CY2026**:
+There is one image per platform year, each built for `linux/amd64` and `linux/arm64`:
 
-- Rocky Linux 8 (glibc 2.28), gcc 14.2, and C++20;
-- Python 3.13 with NumPy 2.3;
-- OpenColorIO 2.5, OpenEXR 3.4, and Imath 3.2;
-- OpenImageIO 3.1.
+| Image | Platform year | Base (glibc) | Compiler | Python / NumPy | OCIO / OpenEXR / Imath | OIIO |
+| --- | --- | --- | --- | --- | --- | --- |
+| `algernon_vfx/oiio:cy2025` | CY2025 | Rocky Linux 8 (2.28) | gcc 11.2, C++17 | 3.11 / 1.26 | 2.4 / 3.3 / 3.1 | 3.1 |
+| `algernon_vfx/oiio:cy2026`, `latest` | CY2026 (current) | Rocky Linux 8 (2.28) | gcc 14.2, C++20 | 3.13 / 2.3 | 2.5 / 3.4 / 3.2 | 3.1 |
+| `algernon_vfx/oiio:cy2027` | CY2027 (from 2027-01-01) | Rocky Linux 9 (2.34) | gcc 14.2, C++20 | 3.13 / 2.4 | 2.6 / 3.5 / 3.2 | 3.2 |
 
-It is built for `linux/amd64` and `linux/arm64`. Versions and checksums are locked in [build/locks/cy2026.json](build/locks/cy2026.json).
-
-A **CY2027** image (`cy2027`, effective 2027-01-01) is also available. It uses Rocky Linux 9 (glibc 2.34), gcc 14.2 with C++20, Python 3.13 with NumPy 2.4, OpenColorIO 2.6, OpenEXR 3.5, Imath 3.2, and OpenImageIO 3.2. Its lock is [build/locks/cy2027.json](build/locks/cy2027.json).
-
-A **CY2025** image (`cy2025`) is also available. It uses Rocky Linux 8 (glibc 2.28), gcc 11.2 with C++17, Python 3.11 with NumPy 1.26, OpenColorIO 2.4, OpenEXR 3.3, Imath 3.1, and OpenImageIO 3.1. Its lock is [build/locks/cy2025.json](build/locks/cy2025.json).
+Choose the year your DCCs and plugins target. [docs/PLATFORMS.md](docs/PLATFORMS.md) lists each image's exact versions, the components left out, deviations from the platform (including ACES), and the verified image IDs and sizes. Versions and checksums are locked in [build/locks/](build/locks/).
 
 There is no **CY2024** image. CY2024's OpenImageIO series, 2.5, requires Boost, which these images leave out, and moving it to OpenImageIO 3 would break compatibility with software built against 2.5.
 
 ## Building with docker
-Build for the Docker engine's own platform:
+Build the current year (CY2026) for the Docker engine's own platform:
 
 ```docker build -t algernon_vfx/oiio .```
 
-Build one platform explicitly with the bake file (`cy2026` is also tagged `latest`):
+Build one year for one platform with the bake file:
 
 ```docker buildx bake --set '*.platform=linux/arm64' --load cy2026```
 
-Use `linux/amd64` for the x86-64 image. On an arm64 host such as Apple silicon, it builds under emulation. Replace `cy2026` with `cy2025` or `cy2027` to build another year's image.
+Replace `cy2026` with `cy2025` or `cy2027` for another year (`cy2026` is also tagged `latest`). Use `linux/amd64` for the x86-64 image. On an arm64 host such as Apple silicon, it builds under emulation.
 
 ## Running image in an interactive bash shell
 ```docker run -it --entrypoint='bash' algernon_vfx/oiio```
+
+Add `:cy2025` or another year's tag to choose a year, and `-v "$PWD:/work" -w /work` to work on images in the current directory.
 
 ## Validating an image
 ```python3 scripts/validate_image.py --image algernon_vfx/oiio:cy2026 --platform linux/arm64 --year cy2026```
@@ -46,6 +45,7 @@ The previous CY2021 recipe remains in [legacy/Dockerfile.cy2021](legacy/Dockerfi
 
 ## Project documentation
 
+- [Platforms](docs/PLATFORMS.md): the supported years, their verified versions, and annual maintenance.
 - [Mission](docs/MISSION.md): purpose, architecture, and quality expectations.
 - [Roadmap](docs/ROADMAP.md): phase status and the next planned work.
 - [Git workflow](docs/GIT.md): branches, worktree safety, and signed commits.

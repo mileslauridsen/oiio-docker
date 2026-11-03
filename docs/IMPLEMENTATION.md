@@ -2,6 +2,36 @@
 
 Record decisions that change project direction, specifications, runtime behavior, tests, validation, dependencies, deployment, or architecture. Link to plans rather than duplicating their details.
 
+## 2026-11-02: Document The Platform Support Contract
+
+Request:
+
+- Write `docs/PLATFORMS.md` (Phase 3 Step 4).
+
+Decision:
+
+- Add [PLATFORMS.md](PLATFORMS.md). It covers how to choose a year; the specified and verified versions for CY2025, CY2026, and CY2027; components left out; deviations; why CY2024 is not built; the verified image IDs and sizes; and the annual maintenance procedure.
+- Image identity: the images are not published, so the page records local image IDs from the `cy<year>-<arch>` test builds, not registry digests.
+- ACES guidance, resolving the earlier follow-ups:
+  - CY2025: an external ACES 2.0 config written for OCIO 2.4, set through `OCIO`. Not tested in the image.
+  - CY2027: select a built-in ACES 2.0 config by name, for example `OCIO=ocio://cg-config-v4.0.0_aces-v2.0_ocio-v2.5`.
+- Rewrite the README's opening as a per-year table linking PLATFORMS.md. Update the mission's outcome statement and engineering model, which still described the ASWF and CentOS 7 recipe.
+
+Affected areas:
+
+- `docs/PLATFORMS.md`, the README, the mission, the Phase 3 plan, the roadmap, and this log.
+
+Validation:
+
+- Documentation links and anchors resolve.
+- On the arm64 images: `/opt/vfx` is 146, 140, and 145 MB for CY2025, CY2026, and CY2027; no image has `pip`; and `OCIO=ocio://default` loads `cg-config-v2.2.0_aces-v1.3_ocio-v2.4`, `cg-config-v4.0.0_aces-v2.0_ocio-v2.5`, and `cg-config-v5.0.0_aces-v2.1_ocio-v2.6`.
+- On `cy2027-arm64`, `OCIO=ocio://cg-config-v4.0.0_aces-v2.0_ocio-v2.5` and `OCIO=ocio://studio-config-v4.0.0_aces-v2.0_ocio-v2.5` both load, and an ACES2065-1 to ACEScg conversion works in PyOpenColorIO and in `ImageBufAlgo.colorconvert`.
+
+Follow-up:
+
+- Before merging: run the README's plain build and interactive shell, and build with the bake file's own tags.
+- Phase 3 Step 5: retire `legacy/`.
+
 ## 2026-11-02: Do Not Build CY2024
 
 Request:

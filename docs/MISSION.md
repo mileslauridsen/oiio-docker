@@ -2,7 +2,7 @@
 
 Provide a containerized OpenImageIO (OIIO) and OpenColorIO (OCIO) environment so that visual effects artists and pipeline developers can inspect, convert, color-manage, and prepare texture images. They should be able to do this from the command line or from Python, without building the VFX library stack on every workstation or render worker.
 
-The intended outcome is an image whose tool set, library versions, build inputs, and runtime behavior are documented and verified. Neither has happened yet. The current recipe dates from April 2021 and has not been built since this documentation was adopted. See the [build verification plan](plans/02-build-verification.md).
+The intended outcome is one image per supported VFX Reference Platform year whose tool set, library versions, build inputs, and runtime behavior are documented and verified. The CY2025, CY2026, and CY2027 images build and pass their checks on amd64 and arm64; [PLATFORMS.md](PLATFORMS.md) is their support contract.
 
 ## Development Loop
 
@@ -18,11 +18,15 @@ define tool and format requirements -> update build recipe -> build image -> ver
 
 ## Engineering Model
 
-- `Dockerfile`: has two stages.
-  - The compile stage is based on `aswf/ci-vfxall:2021-clang10.5`. It supplies OCIO, OpenEXR, and the rest of the CY2021 library stack. On top of that it installs pybind11, clones OIIO from GitHub, and builds OIIO with its command-line tools and Python bindings.
-  - The runtime stage is based on `centos:centos7`. It copies system and `/usr/local` directories from the compile stage, plus the OIIO build's `bin` directory, and runs as the non-root user `algernon`.
+- `Dockerfile`: one parameterized recipe for every platform year.
+  - The builder stage uses a digest-pinned Rocky Linux base and its `gcc-toolset` compiler. It fetches only locked sources and wheels, checking each SHA-256, then builds CPython, NumPy, Imath, OpenEXR, OCIO, OIIO, and their image libraries into `/opt/vfx` with network access disabled.
+  - The runtime stage is the matching Rocky Linux minimal base plus `/opt/vfx`, and runs as the non-root user `algernon`.
+- `build/locks/cy<year>.json`: each year's specified versions, toolchain, and locked inputs. `build/fetch_sources.py` downloads and verifies them.
+- `docker-bake.hcl`: one target per year, with that year's base images, compiler, and C++ standard.
+- `scripts/validate_image.py` and `build/image-size-budgets.json`: check a built image against its lock and size budget.
+- `legacy/Dockerfile.cy2021`: the previous CY2021 recipe, kept until Phase 3 retires it.
 - `README.md`: the operator entry point, with build and interactive-shell commands and documentation links.
-- `docs/`: mission, direction, execution plans, Git policy, and decision history.
+- `docs/`: mission, platform support contract ([PLATFORMS.md](PLATFORMS.md)), direction, execution plans, Git policy, and decision history.
 - `templates/project-playbook/`: reusable source templates, kept separate from the adopted project documents.
 
 Images enter and leave through caller-supplied mounts. This repository does not implement an application server, job scheduler, or automated image pipeline.
