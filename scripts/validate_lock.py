@@ -95,6 +95,10 @@ def validate_year(year, helper, targets, key_cache):
                 tag = "@refs/tags/v" + item["version"]
                 require(signature["certificate_identity"].endswith(tag),
                         "%s %s Sigstore identity is not for tag v%s" % (year, name, item["version"]))
+                root = ROOT / "build" / signature["trusted_root"]
+                require(root.is_file(), "%s %s Sigstore trusted root is missing: %s" % (year, name, signature["trusted_root"]))
+                require(hashlib.sha256(root.read_bytes()).hexdigest() == signature["trusted_root_sha256"],
+                        "%s %s Sigstore trusted root differs from its pinned SHA-256" % (year, name))
 
     expected = COMMON_SOURCES | YEAR_SOURCES[year]
     require(sources == expected, "%s source set differs: missing %s, unexpected %s" %
@@ -174,7 +178,22 @@ def validate_rejections():
                    "--verify-archive", "zlib", "--archive", str(archive), "--extract-dir",
                    str(directory / "extracted-signature")],
                   "detached signature verification failed", directory / "extracted-signature")
-    print("Verified checksum and GPG signature rejection before extraction")
+
+        # A Sigstore entry whose pinned trust root does not match fails before cosign runs.
+        imath = next(item for item in json.loads(pathlib.Path(lock).read_text(encoding="utf-8"))["dependencies"]
+                     if item["name"] == "imath")
+        imath_archive = directory / "imath-test.tar.gz"
+        imath_archive.write_bytes(b"checksum-matching test archive\n")
+        root_lock = {"lock_version": 1, "dependencies": [dict(imath, archive=imath_archive.name, sha256=hashlib.sha256(
+            imath_archive.read_bytes()).hexdigest(), signatures=[dict(imath["signatures"][0], file="imath-test.sigstore.json",
+                                                                     trusted_root_sha256="0" * 64)])]}
+        (directory / "root-lock.json").write_text(json.dumps(root_lock), encoding="utf-8")
+        (directory / "imath-test.sigstore.json").write_text("{}\n", encoding="utf-8")
+        rejection(["--lockfile", str(directory / "root-lock.json"), "--platform", "linux/arm64",
+                   "--verify-archive", "imath", "--archive", str(imath_archive), "--extract-dir",
+                   str(directory / "extracted-trusted-root")],
+                  "Sigstore trusted root SHA-256 mismatch", directory / "extracted-trusted-root")
+    print("Verified checksum, GPG signature, and Sigstore trusted root rejection before extraction")
 
 
 if __name__ == "__main__":

@@ -140,7 +140,9 @@
           "url": "https://github.com/AcademySoftwareFoundation/Imath/releases/download/v3.1.12/Imath-3.1.12.tar.gz.sigstore.json",
           "file": "Imath-3.1.12.tar.gz.sigstore.json",
           "certificate_identity": "https://github.com/AcademySoftwareFoundation/Imath/.github/workflows/release-sign.yml@refs/tags/v3.1.12",
-          "certificate_oidc_issuer": "https://token.actions.githubusercontent.com"
+          "certificate_oidc_issuer": "https://token.actions.githubusercontent.com",
+          "trusted_root": "keys/sigstore-trusted-root.json",
+          "trusted_root_sha256": "6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66"
         }
       ]
     },
@@ -169,7 +171,9 @@
           "url": "https://github.com/AcademySoftwareFoundation/openexr/releases/download/v3.3.15/openexr-3.3.15.tar.gz.sigstore.json",
           "file": "openexr-3.3.15.tar.gz.sigstore.json",
           "certificate_identity": "https://github.com/AcademySoftwareFoundation/openexr/.github/workflows/release-sign.yml@refs/tags/v3.3.15",
-          "certificate_oidc_issuer": "https://token.actions.githubusercontent.com"
+          "certificate_oidc_issuer": "https://token.actions.githubusercontent.com",
+          "trusted_root": "keys/sigstore-trusted-root.json",
+          "trusted_root_sha256": "6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66"
         }
       ]
     },
@@ -287,7 +291,9 @@
           "url": "https://github.com/AcademySoftwareFoundation/OpenImageIO/releases/download/v3.1.19.0/OpenImageIO-3.1.19.0.tar.gz.sigstore.json",
           "file": "OpenImageIO-3.1.19.0.tar.gz.sigstore.json",
           "certificate_identity": "https://github.com/AcademySoftwareFoundation/OpenImageIO/.github/workflows/release-sign.yml@refs/tags/v3.1.19.0",
-          "certificate_oidc_issuer": "https://token.actions.githubusercontent.com"
+          "certificate_oidc_issuer": "https://token.actions.githubusercontent.com",
+          "trusted_root": "keys/sigstore-trusted-root.json",
+          "trusted_root_sha256": "6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66"
         }
       ]
     },

@@ -2,6 +2,32 @@
 
 Record decisions that change project direction, specifications, runtime behavior, tests, validation, dependencies, deployment, or architecture. Link to plans rather than duplicating their details.
 
+## 2026-11-03: Verify Sigstore Bundles Offline
+
+Request:
+
+- Remove the `sources` stage's dependency on reaching Sigstore during verification.
+
+Decision:
+
+- Pin the public Sigstore trust root as `build/keys/sigstore-trusted-root.json` and pass it to `cosign verify-blob --trusted-root`. Without it, `cosign` fetched the trust root from `tuf-repo-cdn.sigstore.dev` on every cold build.
+- Each Sigstore entry in the locks names the file and pins its SHA-256 in `trusted_root` and `trusted_root_sha256`, following the GPG entries' `key_file` and `fingerprint`. The helper checks the hash before running `cosign`.
+- The file came from the locked `cosign` 3.1.3's own TUF fetch (root version 16, targets version 14). Its SHA-256, `6494e21e…`, matches the TUF `targets.json` and sigstore/root-signing's `targets/trusted_root.json`.
+- `validate_lock.py` checks the pinned hash against the file and shows that a mismatched trust root stops the helper before `cosign` runs and before extraction.
+- The refresh procedure for a future key rotation is in [SOURCE_PROVENANCE.md](SOURCE_PROVENANCE.md#lock-update-procedure).
+
+Affected areas:
+
+- `build/fetch_sources.py`, `build/keys/sigstore-trusted-root.json`, the three locks, `scripts/validate_lock.py`, SOURCE_PROVENANCE.md, and this log.
+
+Validation:
+
+- In a `--network=none` Rocky 9.8 arm64 container, the locked `cosign` without a trust root failed: `tuf refresh failed: Get "https://tuf-repo-cdn.sigstore.dev/15.root.json" … network is unreachable`. With `--trusted-root`, it printed `Verified OK` for Imath 3.2.3 and rejected the same bundle against the `v3.2.2` workflow identity.
+- In the same offline container, with the repository mounted read-only, `fetch_sources.py --verify-archive imath` verified the SHA-256 and the Sigstore signature through the pinned trust root.
+- `scripts/validate_lock.py` passes, including the new trust-root rejection.
+- The `sources` stage passed for all three years on both architectures, with the same counts as before: 21 checksums for CY2025 and CY2027 and 20 for CY2026, 5 GPG signatures, and 3 Sigstore bundles for CY2025 and 4 for CY2026 and CY2027.
+- The images were not rebuilt. The change affects only how bundles are verified; the verified archives and their checksums are unchanged.
+
 ## 2026-11-03: Verify Source Signatures (Phase 4 Task 1)
 
 Request:

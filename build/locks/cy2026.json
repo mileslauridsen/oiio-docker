@@ -140,7 +140,9 @@
           "url": "https://github.com/AcademySoftwareFoundation/Imath/releases/download/v3.2.3/Imath-3.2.3.tar.gz.sigstore.json",
           "file": "Imath-3.2.3.tar.gz.sigstore.json",
           "certificate_identity": "https://github.com/AcademySoftwareFoundation/Imath/.github/workflows/release-sign.yml@refs/tags/v3.2.3",
-          "certificate_oidc_issuer": "https://token.actions.githubusercontent.com"
+          "certificate_oidc_issuer": "https://token.actions.githubusercontent.com",
+          "trusted_root": "keys/sigstore-trusted-root.json",
+          "trusted_root_sha256": "6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66"
         }
       ]
     },
@@ -159,7 +161,9 @@
           "url": "https://github.com/AcademySoftwareFoundation/openexr/releases/download/v3.4.17/openexr-3.4.17.tar.gz.sigstore.json",
           "file": "openexr-3.4.17.tar.gz.sigstore.json",
           "certificate_identity": "https://github.com/AcademySoftwareFoundation/openexr/.github/workflows/release-sign.yml@refs/tags/v3.4.17",
-          "certificate_oidc_issuer": "https://token.actions.githubusercontent.com"
+          "certificate_oidc_issuer": "https://token.actions.githubusercontent.com",
+          "trusted_root": "keys/sigstore-trusted-root.json",
+          "trusted_root_sha256": "6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66"
         }
       ]
     },
@@ -247,7 +251,9 @@
           "url": "https://github.com/AcademySoftwareFoundation/OpenColorIO/releases/download/v2.5.2/OpenColorIO-2.5.2.tar.gz.sigstore.json",
           "file": "OpenColorIO-2.5.2.tar.gz.sigstore.json",
           "certificate_identity": "https://github.com/AcademySoftwareFoundation/OpenColorIO/.github/workflows/release-sign.yml@refs/tags/v2.5.2",
-          "certificate_oidc_issuer": "https://token.actions.githubusercontent.com"
+          "certificate_oidc_issuer": "https://token.actions.githubusercontent.com",
+          "trusted_root": "keys/sigstore-trusted-root.json",
+          "trusted_root_sha256": "6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66"
         }
       ]
     },
@@ -286,7 +292,9 @@
           "url": "https://github.com/AcademySoftwareFoundation/OpenImageIO/releases/download/v3.1.19.0/OpenImageIO-3.1.19.0.tar.gz.sigstore.json",
           "file": "OpenImageIO-3.1.19.0.tar.gz.sigstore.json",
           "certificate_identity": "https://github.com/AcademySoftwareFoundation/OpenImageIO/.github/workflows/release-sign.yml@refs/tags/v3.1.19.0",
-          "certificate_oidc_issuer": "https://token.actions.githubusercontent.com"
+          "certificate_oidc_issuer": "https://token.actions.githubusercontent.com",
+          "trusted_root": "keys/sigstore-trusted-root.json",
+          "trusted_root_sha256": "6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66"
         }
       ]
     },

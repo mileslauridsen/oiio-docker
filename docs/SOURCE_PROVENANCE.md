@@ -16,7 +16,7 @@ Every later build step runs with `--network=none`, so nothing can be fetched aft
 | Inputs | Verification at build time |
 | --- | --- |
 | zlib, libjpeg-turbo, libtiff, expat, CPython | SHA-256, then the project's detached GPG signature, which must come from the pinned key fingerprint. |
-| Imath, OpenEXR, OpenColorIO, OpenImageIO | SHA-256, then the project's Sigstore bundle, checked with the locked `cosign` against the exact GitHub workflow that signs that tag (`.github/workflows/release-sign.yml@refs/tags/v<version>`, issuer `https://token.actions.githubusercontent.com`). |
+| Imath, OpenEXR, OpenColorIO, OpenImageIO | SHA-256, then the project's Sigstore bundle, checked offline with the locked `cosign` and the pinned Sigstore trust root against the exact GitHub workflow that signs that tag (`.github/workflows/release-sign.yml@refs/tags/v<version>`, issuer `https://token.actions.githubusercontent.com`). |
 | OpenColorIO 2.4.2 (CY2025) | SHA-256 only. This release publishes no signed tarball, so the lock uses GitHub's tag archive. `validate_lock.py` records it as the one allowed exception. |
 | NumPy wheels | SHA-256 published by PyPI. |
 | `cosign` 3.1.3 | SHA-256 published in the release's `cosign_checksums.txt`, matching a local computation. It is fetched and checked first, used only in the `sources` stage, and never shipped. |
@@ -45,9 +45,17 @@ Cross-checks:
 - python.org lists Pablo Galindo Salgado as the 3.11 release manager (key ID `64E628F8D684696D`) and Thomas Wouters as the 3.13 release manager (key ID `A821E680E5FA6305`). CPython 3.11.18 is signed by `FFE87404168BD847`, the signing subkey of Pablo Galindo Salgado's key.
 - zlib, libtiff, and expat do not publish a fingerprint on their project pages that this check found. Their keys rest on keys.openpgp.org's verified addresses for the named maintainers.
 
+## Pinned Sigstore Trust Root
+
+`build/keys/sigstore-trusted-root.json` holds the public Sigstore instance's trust root: the Fulcio certificate authorities, the Rekor transparency-log keys, the certificate-transparency log keys, and the timestamp authority, each with the period it is valid for. Every Sigstore entry in the locks names this file and pins its SHA-256 (`6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66`). The helper checks that hash before it runs `cosign verify-blob --trusted-root`.
+
+With the trust root pinned, Sigstore verification needs no network. Each bundle already carries the signing certificate, the signature, and the Rekor entry with its inclusion proof, so neither Fulcio nor Rekor is contacted. Without the pinned root, `cosign` fetches the trust root from `https://tuf-repo-cdn.sigstore.dev` on every run and fails when that host cannot be reached.
+
+The file was fetched on 2026-11-03 by the locked `cosign`, whose TUF client checked it against Sigstore's signed TUF metadata (root version 16, targets version 14). Its SHA-256 matches the hash in that `targets.json` and the copy in the [sigstore/root-signing](https://github.com/sigstore/root-signing) repository.
+
 ## Known Limits
 
-- **Sigstore needs the network.** `cosign` downloads Sigstore's trust root when it verifies a bundle. The `sources` stage has network access, but a Sigstore outage would stop a cold build there.
+- **Trust root rotation.** Sigstore adds keys to its trust root when it rotates a certificate authority or log. The current keys have open-ended validity, so the pinned file keeps verifying the locked bundles. A future release signed with a key added after 2026-11-03 will fail to verify until the file is refreshed.
 - **Key expiry.** Sebastian Pipping's signing subkey expires on 2026-12-28. gpgv still accepts signatures made before a key expired, but check the expat signature after that date, and refresh the key file if the maintainer extends it.
 - **Trust in `cosign`.** It is trusted through its publisher checksum, fetched over HTTPS from GitHub. Its own Sigstore signature is not checked, since that would need a verifier trusted some other way.
 
@@ -55,6 +63,7 @@ Cross-checks:
 
 1. Change the entry in each affected lock: version, HTTPS URL, archive name, source root, SHA-256, and checksum provenance. For a signed release, also update the signature URL and file. For GPG, review the signer and the pinned key fingerprint; for Sigstore, update the tag in the workflow identity.
 2. For a new GPG signer, fetch the key from keys.openpgp.org or the project, confirm its fingerprint against what the project publishes, and add it to `build/keys/`.
+   If a new Sigstore bundle fails to verify against the pinned trust root, refresh it: run the locked `cosign verify-blob` once with network access and a new, empty `HOME`, then take `$HOME/.sigstore/root/tuf-repo-cdn.sigstore.dev/targets/trusted_root.json`, which cosign's TUF client has checked. Confirm its SHA-256 matches the `trusted_root.json` hash in the `targets.json` beside it and the copy in sigstore/root-signing. Replace `build/keys/sigstore-trusted-root.json`, and update `trusted_root_sha256` in every lock.
 3. Run `python3 scripts/validate_lock.py`.
 4. Fetch and verify the year's inputs on both architectures, without building the rest:
 
@@ -62,5 +71,5 @@ Cross-checks:
    docker buildx bake --set '*.platform=linux/arm64' --set 'cy2026.target=sources' --set 'cy2026.output=type=cacheonly' --progress=plain cy2026
    ```
 
-   Repeat with `linux/amd64`. The log shows each `SHA-256 verified`, `GPG signature verified`, and `Sigstore signature verified` line.
+   Repeat with `linux/amd64`. The log shows each `SHA-256 verified`, `GPG signature verified`, and `Sigstore signature verified` line. A trusted-root SHA-256 mismatch stops the fetch before `cosign` runs.
 5. Build every affected year on both architectures, run `scripts/validate_image.py`, and record the results in this document and the [implementation log](IMPLEMENTATION.md).

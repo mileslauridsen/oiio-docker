@@ -78,6 +78,10 @@ def check_signature_entry(name, signature):
             raise ValueError("{0}: Sigstore signatures need an exact GitHub workflow identity".format(name))
         if signature.get("certificate_oidc_issuer") != SIGSTORE_ISSUER:
             raise ValueError("{0}: Sigstore issuer must be {1}".format(name, SIGSTORE_ISSUER))
+        if not signature.get("trusted_root"):
+            raise ValueError("{0}: Sigstore signatures need a pinned trusted_root".format(name))
+        if not re.match(r"^[0-9a-f]{64}$", signature.get("trusted_root_sha256", "")):
+            raise ValueError("{0}: trusted_root_sha256 must be 64 lowercase hexadecimal characters".format(name))
     else:
         raise ValueError("{0}: unknown signature type {1}".format(name, kind))
 
@@ -160,12 +164,18 @@ def verify_gpg(dependency, signature, archive_path, signature_path, work_dir):
 
 
 def verify_sigstore(dependency, signature, archive_path, bundle_path, cosign, work_dir):
+    # The pinned trust root replaces cosign's online TUF fetch, so verification needs no network.
+    trusted_root = os.path.join(SCRIPT_DIR, signature["trusted_root"])
+    actual = sha256_file(trusted_root)
+    if actual != signature["trusted_root_sha256"]:
+        raise ValueError("{0}: Sigstore trusted root SHA-256 mismatch: expected {1}, got {2}".format(
+            dependency["name"], signature["trusted_root_sha256"], actual))
     if not cosign:
         raise ValueError("{0}: Sigstore verification requires the locked cosign tool".format(dependency["name"]))
-    # cosign keeps its Sigstore trust root cache under $HOME; keep it out of the source tree.
+    # Keep anything cosign writes under $HOME out of the source tree.
     environment = dict(os.environ, HOME=work_dir)
     process = subprocess.run(
-        [cosign, "verify-blob", "--bundle", bundle_path,
+        [cosign, "verify-blob", "--trusted-root", trusted_root, "--bundle", bundle_path,
          "--certificate-identity", signature["certificate_identity"],
          "--certificate-oidc-issuer", signature["certificate_oidc_issuer"], archive_path],
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, env=environment)
