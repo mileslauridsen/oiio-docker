@@ -227,10 +227,23 @@ RUN --network=none set -eu; \
     cmake --build build -j${BUILD_JOBS} && \
     cmake --install build
 
-# Keep only runtime files in /opt/vfx, drop -O/-OO bytecode, then strip shipped ELF files outside the NumPy wheel.
+# Ship the license and notice files of every component the lock marks as shipped, including the static and
+# header-only ones compiled into the libraries, with a manifest the validator checks. These arguments are
+# declared here so that the compile steps above keep their cache keys.
+ARG PLATFORM_YEAR
+ARG TARGETPLATFORM
+RUN --network=none \
+    --mount=type=bind,source=scripts/collect_licenses.py,target=/build/collect_licenses.py \
+    --mount=type=bind,source=build/locks/${PLATFORM_YEAR}.json,target=/build/lock.json \
+    python3 /build/collect_licenses.py --lockfile /build/lock.json --platform "$TARGETPLATFORM" --source-dir /src \
+        --site-packages /opt/vfx/lib/python${PYTHON_MAJOR_MINOR}/site-packages --output-dir /opt/vfx/share/licenses
+
+# Keep only runtime files in /opt/vfx and drop -O/-OO bytecode. Then strip shipped ELF files outside the NumPy
+# wheel, keeping each one's symbols in /opt/vfx-debug, which stays in this stage. The builds have no -g, so
+# those copies hold symbol tables only.
 RUN --network=none set -eu -o pipefail; \
     cd /opt/vfx; \
-    rm -rf include share/man share/doc lib/pkgconfig lib/cmake lib/*.a; \
+    rm -rf include share/man share/doc lib/pkgconfig lib/cmake lib/libpng lib/*.a; \
     rm -rf lib/python${PYTHON_MAJOR_MINOR}/test lib/python${PYTHON_MAJOR_MINOR}/idlelib \
         lib/python${PYTHON_MAJOR_MINOR}/tkinter lib/python${PYTHON_MAJOR_MINOR}/turtledemo \
         lib/python${PYTHON_MAJOR_MINOR}/ensurepip bin/idle3* bin/pydoc3* bin/python*-config; \
@@ -238,6 +251,9 @@ RUN --network=none set -eu -o pipefail; \
     stripped=0; \
     for f in $(find /opt/vfx -type f -not -path '*/site-packages/numpy*'); do \
         if [ "$(head -c 4 "$f" | od -An -tx1 | tr -d ' ')" = 7f454c46 ]; then \
+            debug="/opt/vfx-debug${f#/opt/vfx}.debug"; \
+            mkdir -p "$(dirname "$debug")"; \
+            objcopy --only-keep-debug "$f" "$debug"; \
             strip --strip-unneeded "$f"; stripped=$((stripped + 1)); \
         fi; \
     done; \

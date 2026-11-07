@@ -39,6 +39,8 @@ The validator checks the image against its lock. It covers:
 - tool, library, and Python versions;
 - the glibc and `libstdc++` symbol limits;
 - unresolved libraries and excluded components;
+- the image contents: no compilers, build tools, headers, or static archives, stripped binaries, Bash, and the `algernon` user;
+- the license and notice files of every shipped component, in `/opt/vfx/share/licenses`;
 - EXR, TIFF, PNG, and JPEG round trips, `maketx`, and NumPy reads;
 - an OCIO ACES conversion;
 - the unpacked size against the budget in [build/image-size-budgets.json](build/image-size-budgets.json).

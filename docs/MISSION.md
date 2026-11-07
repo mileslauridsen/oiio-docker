@@ -23,7 +23,8 @@ define tool and format requirements -> update build recipe -> build image -> ver
   - The runtime stage is the matching Rocky Linux minimal base plus `/opt/vfx`, and runs as the non-root user `algernon`.
 - `build/locks/cy<year>.json`: each year's specified versions, toolchain, and locked inputs. `build/fetch_sources.py` downloads and verifies them with the keys in `build/keys/`, and `scripts/validate_lock.py` checks the locks ([SOURCE_PROVENANCE.md](SOURCE_PROVENANCE.md)). `build/rpm/<year>/` holds each year's pinned Rocky repositories and exact RPM sets, which `build/verify_rpm_lock.py` enforces in the build ([BUILD_ENVIRONMENT.md](BUILD_ENVIRONMENT.md)).
 - `docker-bake.hcl`: one target per year, with that year's base images, compiler, and C++ standard.
-- `scripts/validate_image.py` and `build/image-size-budgets.json`: check a built image against its lock and size budget.
+- `scripts/validate_image.py` and `build/image-size-budgets.json`: check a built image against its lock and size budget: versions, symbol limits, linkage, contents, licenses, and size.
+- `scripts/collect_licenses.py`: copies the license and notice files of every shipped component into `/opt/vfx/share/licenses` during the build ([SOURCE_PROVENANCE.md](SOURCE_PROVENANCE.md#shipped-licenses)).
 - `build/image-support.json`, `scripts/generate_test_images.py`, and `scripts/smoke_images.py`: the image support contract, its independently generated fixtures, and the checks that run it against a built image ([IMAGE_SUPPORT.md](IMAGE_SUPPORT.md)).
 - `README.md`: the operator entry point, with build and interactive-shell commands and documentation links.
 - `docs/`: mission, platform support contract ([PLATFORMS.md](PLATFORMS.md)), direction, execution plans, Git policy, and decision history.

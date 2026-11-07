@@ -53,6 +53,16 @@ With the trust root pinned, Sigstore verification needs no network. Each bundle 
 
 The file was fetched on 2026-11-03 by the locked `cosign`, whose TUF client checked it against Sigstore's signed TUF metadata (root version 16, targets version 14). Its SHA-256 matches the hash in that `targets.json` and the copy in the [sigstore/root-signing](https://github.com/sigstore/root-signing) repository.
 
+## Shipped Licenses
+
+Each lock entry's `shipped` flag records whether its code reaches the image. Everything is shipped except NASM and `cosign`, which only build or verify, and `validate_lock.py` enforces that. Shipped includes the static libraries linked into OCIO (expat, yaml-cpp, pystring, minizip-ng), the header-only and compiled-in code (`sse2neon`, pybind11, fmt, robin-map, nanobind), and CY2025's libdeflate, which is compiled into OpenEXR.
+
+`scripts/collect_licenses.py` runs in the compile stage, after OIIO is installed. For each shipped source it copies the `COPYING`, `LICENSE`, `COPYRIGHT`, `NOTICE`, `PATENTS`, and `THIRD-PARTY` files from the source tree to three directory levels deep, so bundled code's notices come too: OpenEXR's vendored libdeflate, OpenJPH, and zstd, and CPython's bundled expat and hash implementations. Tests, examples, `contrib/`, documentation copies, and other platforms' packaging are skipped, because they are not built. Two notices have other names and are added by name: libjpeg-turbo's `README.ijg`, which holds the IJG terms, and CPython's `Doc/license.rst`, which lists the third-party code CPython incorporates. For NumPy it copies the license files from the installed wheel's `dist-info`, which cover the OpenBLAS and gfortran libraries the wheel bundles. The collector fails if any shipped component yields no notice.
+
+The image holds them in `/opt/vfx/share/licenses/<component>/`, with `components.json` listing each component's version and each file's SHA-256: 28 files for 18 components in CY2026, 30 for 19 in CY2025, and 46 for 19 in CY2027, whose NumPy wheel alone has 17. They add 0.4–0.6 MB to an image. `scripts/validate_image.py` checks that the manifest names exactly the lock's shipped components and versions, and that every file is present with its recorded hash. The Rocky base image's own packages keep their license files in `/usr/share/licenses`; the validator checks that `glibc` and `libgcc` are there. Rocky's `libstdc++` package carries no separate license file; its terms are GCC's, which `libgcc` carries.
+
+This collects the notices; it is not a legal review of the licenses.
+
 ## Known Limits
 
 - **Trust root rotation.** Sigstore adds keys to its trust root when it rotates a certificate authority or log. The current keys have open-ended validity, so the pinned file keeps verifying the locked bundles. A future release signed with a key added after 2026-11-03 will fail to verify until the file is refreshed.
@@ -61,7 +71,7 @@ The file was fetched on 2026-11-03 by the locked `cosign`, whose TUF client chec
 
 ## Lock Update Procedure
 
-1. Change the entry in each affected lock: version, HTTPS URL, archive name, source root, SHA-256, and checksum provenance. For a signed release, also update the signature URL and file. For GPG, review the signer and the pinned key fingerprint; for Sigstore, update the tag in the workflow identity.
+1. Change the entry in each affected lock: version, HTTPS URL, archive name, source root, SHA-256, checksum provenance, and for a new input whether it is `shipped`. For a signed release, also update the signature URL and file. For GPG, review the signer and the pinned key fingerprint; for Sigstore, update the tag in the workflow identity.
 2. For a new GPG signer, fetch the key from keys.openpgp.org or the project, confirm its fingerprint against what the project publishes, and add it to `build/keys/`.
    If a new Sigstore bundle fails to verify against the pinned trust root, refresh it: run the locked `cosign verify-blob` once with network access and a new, empty `HOME`, then take `$HOME/.sigstore/root/tuf-repo-cdn.sigstore.dev/targets/trusted_root.json`, which cosign's TUF client has checked. Confirm its SHA-256 matches the `trusted_root.json` hash in the `targets.json` beside it and the copy in sigstore/root-signing. Replace `build/keys/sigstore-trusted-root.json`, and update `trusted_root_sha256` in every lock.
 3. Run `python3 scripts/validate_lock.py`.
@@ -72,4 +82,4 @@ The file was fetched on 2026-11-03 by the locked `cosign`, whose TUF client chec
    ```
 
    Repeat with `linux/amd64`. The log shows each `SHA-256 verified`, `GPG signature verified`, and `Sigstore signature verified` line. A trusted-root SHA-256 mismatch stops the fetch before `cosign` runs.
-5. Build every affected year on both architectures, run `scripts/validate_image.py`, and record the results in this document and the [implementation log](IMPLEMENTATION.md).
+5. Build every affected year on both architectures, run `scripts/validate_image.py` (which also checks the shipped license files) and `scripts/smoke_images.py`, and record the results in this document and the [implementation log](IMPLEMENTATION.md).

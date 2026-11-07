@@ -28,6 +28,8 @@ SIGNED = {"zlib": "gpg", "libjpeg-turbo": "gpg", "libtiff": "gpg", "cpython": "g
           "imath": "sigstore", "openexr": "sigstore", "opencolorio": "sigstore", "openimageio": "sigstore"}
 # Releases that publish no signed artifact, recorded so the exception stays deliberate.
 UNSIGNED_EXCEPTIONS = {("opencolorio", "2.4.2")}
+# Inputs used only to build or verify; everything else is compiled into, or installed in, the image.
+BUILD_TOOLS = {"nasm", "cosign"}
 # Every format plugin in OIIO 3.1 and 3.2 (src/*.imageio); the support contract enables or excludes each one.
 OIIO_PLUGINS = {
     "bmp", "cineon", "dds", "dicom", "dpx", "ffmpeg", "fits", "gif", "hdr", "heif", "ico", "iff", "jpeg", "jpeg2000",
@@ -86,6 +88,9 @@ def validate_year(year, helper, targets, key_cache):
         require(item.get("version"), "%s %s has no version" % (year, name))
         require(item.get("role"), "%s %s has no role" % (year, name))
         require(item.get("checksum_provenance"), "%s %s has no checksum provenance" % (year, name))
+        # collect_licenses.py ships notices for every shipped entry; build tools never reach the image.
+        require(item.get("shipped") is (name not in BUILD_TOOLS),
+                "%s %s must set shipped to %s" % (year, name, name not in BUILD_TOOLS))
         by_name.setdefault(name, []).append(item)
         if kind == "source":
             sources.add(name)

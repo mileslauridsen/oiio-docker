@@ -12,7 +12,7 @@ This is the high-level direction for oiio-docker. Detailed execution belongs in 
 ## Current Direction
 
 - The project playbook is adopted, and Phase 2 is complete: the legacy CY2021 image builds for amd64 with OIIO pinned and passes the runtime checks.
-- Phase 3 is complete: CY2025–CY2027 images built from Rocky Linux replace the CY2021 image, and the CY2021 recipe is retired. [Phase 4](plans/04-locked-inputs-and-ci.md) is in progress: Tasks 1–3 are complete, so every source, RPM, base image, and build tool is locked and verified, and every image passes the [image support contract](IMAGE_SUPPORT.md). Next are the identity, linkage, and license checks, reproducibility checks, and hosted CI.
+- Phase 3 is complete: CY2025–CY2027 images built from Rocky Linux replace the CY2021 image, and the CY2021 recipe is retired. [Phase 4](plans/04-locked-inputs-and-ci.md) is in progress: Tasks 1–4 are complete, so every source, RPM, base image, and build tool is locked and verified, and every image passes the [image support contract](IMAGE_SUPPORT.md) and the identity, linkage, contents, license, and size checks. Next are reproducibility checks and hosted CI.
 - Phase 3 does not use ASWF build images. Each year builds from a digest-pinned Rocky Linux base at that year's glibc floor, with Rocky's `gcc-toolset` compiler and checksum-verified upstream sources for the components the platform specifies. Runtime stages contain only what OIIO's tools and Python bindings need.
 - Keep the two-stage build model, the direct OIIO CLI workflow, and Python access.
 - Track further work in the phase plans rather than in a duplicate backlog.
@@ -31,7 +31,7 @@ build: define compatibility -> inspect dependencies -> build -> inspect tools an
 | 1. Project playbook | complete | [Plan](plans/01-project-playbook.md) | Project guidance, workflow, mission, roadmap, plans, and log adopted. |
 | 2. Build verification | complete | [Plan](plans/02-build-verification.md) | The legacy amd64 image builds with OIIO pinned to 2.2.10.1 and, after a library-path fix, passes all runtime checks, including the interactive shell. |
 | 3. Reference platform build matrix | complete (CY2025, CY2026, and CY2027 verified on amd64 and arm64; CY2024 not built; support contract in [PLATFORMS.md](PLATFORMS.md)) | [Plan](plans/03-reference-platform-matrix.md) | Small, verified `cy2025`–`cy2027` images on Rocky Linux for amd64 and arm64, matching each year's platform versions; CY2021 recipe retired. |
-| 4. Locked inputs and automated verification | in progress (Tasks 1–3 complete: locked inputs, build environment, support contract) | [Plan](plans/04-locked-inputs-and-ci.md) | Locked sources, RPMs, and toolchain; contract, contents, size, and reproducibility checks; hosted CI over all 6 year/architecture images. |
+| 4. Locked inputs and automated verification | in progress (Tasks 1–4 complete: locked inputs, build environment, support contract, image checks) | [Plan](plans/04-locked-inputs-and-ci.md) | Locked sources, RPMs, and toolchain; contract, contents, size, and reproducibility checks; hosted CI over all 6 year/architecture images. |
 
 ## Assumptions
 

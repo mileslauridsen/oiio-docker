@@ -84,6 +84,7 @@
       "sha256": "87336eba53b4acfe917424ab5d500d2b0054d9f5148d35c2273ccf2cfb712f0d",
       "source_root": "nasm-3.02",
       "role": "build tool for libjpeg-turbo SIMD; not in Rocky's default repositories",
+      "shipped": false,
       "checksum_provenance": "Locally computed SHA-256; matches the ffmpeg-docker lock for the same archive."
     },
     {
@@ -94,6 +95,7 @@
       "sha256": "38ef96b8dfe510d42707d9c781877914792541133e1870841463bfa73f883e32",
       "source_root": "zlib-1.3.1",
       "role": "shared; OCIO 2.4 requires >= 1.2.8, and 1.3.1 matches CY2026, while Rocky 8 ships 1.2.11",
+      "shipped": true,
       "checksum_provenance": "Locally computed SHA-256 from the upstream release asset; detached GPG signature verified with the pinned key of Mark Adler.",
       "signatures": [
         {
@@ -113,6 +115,7 @@
       "sha256": "8f0012234b464ce50890c490f18194f913a7b1f4e6a03d6644179fa0f867d0cf",
       "source_root": "libjpeg-turbo-3.1.2",
       "role": "shared; OIIO 3.1 requires >= 2.1 and defaults to 3.1.2, while Rocky 8 ships 1.5.3",
+      "shipped": true,
       "checksum_provenance": "Locally computed SHA-256 from the upstream release asset; detached GPG signature verified with the pinned key of the libjpeg-turbo Project.",
       "signatures": [
         {
@@ -132,6 +135,7 @@
       "sha256": "71158e53cfdf2877bc99bcab33641d78df3f48e6e0daad030afe9cb8c031aa46",
       "source_root": "libpng-1.6.50",
       "role": "shared; OIIO's default local-build version, built against the locked zlib",
+      "shipped": true,
       "checksum_provenance": "Locally computed SHA-256 for the tag archive."
     },
     {
@@ -142,6 +146,7 @@
       "sha256": "b92017489bdc1db3a4c97191aa4b75366673cb746de0dce5d7a749d5954681ba",
       "source_root": "tiff-4.7.1",
       "role": "shared; OIIO's default local-build version, built against the locked zlib and libjpeg-turbo to avoid two libjpeg.so.62 copies",
+      "shipped": true,
       "checksum_provenance": "Locally computed SHA-256 from the upstream release archive; detached GPG signature verified with the pinned key of Even Rouault.",
       "signatures": [
         {
@@ -161,6 +166,7 @@
       "sha256": "9120e0a653868f6e3698d36cdd99e5a58903ec9469e448f21d98f7b16d8fa290",
       "source_root": "Python-3.11.18",
       "role": "platform Python 3.11.x; built from source for one install layout across years",
+      "shipped": true,
       "checksum_provenance": "Locally computed SHA-256 from python.org; detached GPG signature verified with the pinned key of Pablo Galindo Salgado, the release manager python.org lists.",
       "signatures": [
         {
@@ -180,6 +186,7 @@
       "sha256": "cb8ca9ca77ac4338ebbee911fc90c886011ac5b00088630bacf8ef6c6e522f0a",
       "source_root": "Imath-3.1.12",
       "role": "platform Imath 3.1.x; OCIO 2.4's recommended version",
+      "shipped": true,
       "checksum_provenance": "Locally computed SHA-256 of the signed release tarball, whose files match the tag archive; Sigstore bundle verified against the project's release-sign workflow for this tag.",
       "signatures": [
         {
@@ -201,6 +208,7 @@
       "sha256": "225d982bcaf553221c76726358d2ea139bb34913180b20823c782cede060affd",
       "source_root": "libdeflate-1.18",
       "role": "sources compiled into OpenEXRCore; the tag OpenEXR 3.3 would otherwise clone",
+      "shipped": true,
       "checksum_provenance": "Locally computed SHA-256 for the tag archive."
     },
     {
@@ -211,6 +219,7 @@
       "sha256": "2f046c40861848a43b5232bf2d08d8c57ef4d4458c5ea96920d976806148a753",
       "source_root": "openexr-3.3.15",
       "role": "platform OpenEXR 3.3.x; compiles the locked libdeflate into OpenEXRCore",
+      "shipped": true,
       "checksum_provenance": "Locally computed SHA-256 of the signed release tarball, whose files match the tag archive; Sigstore bundle verified against the project's release-sign workflow for this tag.",
       "signatures": [
         {
@@ -232,6 +241,7 @@
       "sha256": "21b778b34ec837c2ac285aef340f9fb5fa063a811b21ea4d2412a9702c88995c",
       "source_root": "expat-2.7.2",
       "role": "static, linked into OCIO; OCIO 2.4 requires >= 2.4.1 and recommends 2.5.0, so use the CVE-fixed release CY2026 uses",
+      "shipped": true,
       "checksum_provenance": "Locally computed SHA-256 from the upstream release asset; detached GPG signature verified with the pinned key of Sebastian Pipping.",
       "signatures": [
         {
@@ -251,6 +261,7 @@
       "sha256": "fbe74bbdcee21d656715688706da3c8becfd946d92cd44705cc6098bb23b3a16",
       "source_root": "yaml-cpp-0.8.0",
       "role": "static, linked into OCIO; OCIO 2.4 requires >= 0.6.3 and recommends 0.7.0, so use the release CY2026 uses",
+      "shipped": true,
       "checksum_provenance": "Locally computed SHA-256 for the tag archive."
     },
     {
@@ -261,6 +272,7 @@
       "sha256": "49da0fe2a049340d3c45cce530df63a2278af936003642330287b68cefd788fb",
       "source_root": "pystring-1.1.4",
       "role": "static, linked into OCIO; OCIO 2.4 requires >= 1.1.3",
+      "shipped": true,
       "checksum_provenance": "Locally computed SHA-256 for the tag archive."
     },
     {
@@ -271,6 +283,7 @@
       "sha256": "c362e35ee973fa7be58cc5e38a4a6c23cc8f7e652555daf4f115a9eb2d3a6be7",
       "source_root": "minizip-ng-4.0.10",
       "role": "static, linked into OCIO; OCIO 2.4 requires >= 3.0.6 and recommends 3.0.7, so use the release CY2026 uses",
+      "shipped": true,
       "checksum_provenance": "Locally computed SHA-256 for the tag archive."
     },
     {
@@ -281,6 +294,7 @@
       "sha256": "3427a495743bb6fd1b5f9f806b80f57d67b1ac7ccf39a5f44aedd487fd7e6da1",
       "source_root": "sse2neon-227cc413fb2d50b2a10073087be96b59d5364aea",
       "role": "header used by OCIO SIMD on arm64; the commit OCIO 2.4.2's installer pins",
+      "shipped": true,
       "checksum_provenance": "Locally computed SHA-256 for the immutable commit archive."
     },
     {
@@ -291,6 +305,7 @@
       "sha256": "e08cb87f4773da97fa7b5f035de8763abc656d87d5773e62f6da0587d1f0ec20",
       "source_root": "pybind11-2.13.6",
       "role": "build-time headers for the OCIO and OIIO Python bindings; newest 2.x, since OCIO 2.4 recommends 2.12.1 and OIIO 3.1 accepts 2.7 to 3.0",
+      "shipped": true,
       "checksum_provenance": "Locally computed SHA-256 for the tag archive."
     },
     {
@@ -301,6 +316,7 @@
       "sha256": "2d8f2c47c40476d6e8cea9d878f6601d04f6d5642b47018eaafa9e9f833f3690",
       "source_root": "OpenColorIO-2.4.2",
       "role": "platform OpenColorIO 2.4.x",
+      "shipped": true,
       "checksum_provenance": "Locally computed SHA-256 for the tag archive; this release publishes no signed tarball, so the tag archive is checksum-only."
     },
     {
@@ -311,6 +327,7 @@
       "sha256": "ea7de4299689e12b6dddd392f9896f08fb0777ac7168897a244a6d6085043fea",
       "source_root": "fmt-12.1.0",
       "role": "build-time headers for OIIO; OIIO 3.1's default local-build version",
+      "shipped": true,
       "checksum_provenance": "Locally computed SHA-256 for the tag archive."
     },
     {
@@ -321,6 +338,7 @@
       "sha256": "7930dbf9634acfc02686d87f615c0f4f33135948130b8922331c16d90a03250c",
       "source_root": "robin-map-1.4.0",
       "role": "build-time headers for OIIO; OIIO 3.1's default local-build version",
+      "shipped": true,
       "checksum_provenance": "Locally computed SHA-256 for the tag archive."
     },
     {
@@ -331,6 +349,7 @@
       "sha256": "10b2a61db5df5e34465640abd5c889ff3dfb1d893d207428c42a3d64e5e039f6",
       "source_root": "OpenImageIO-3.1.19.0",
       "role": "newest 3.1 patch release; ASWF's CY2026 reference pin is 3.1.18.1",
+      "shipped": true,
       "checksum_provenance": "Locally computed SHA-256 of the signed release tarball, whose files match the tag archive; Sigstore bundle verified against the project's release-sign workflow for this tag.",
       "signatures": [
         {
@@ -353,6 +372,7 @@
       "archive": "numpy-1.26.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
       "sha256": "666dbfb6ec68962c033a450943ded891bed2d54e6755e35e5835d63f4f6931d5",
       "role": "platform NumPy 1.26.x",
+      "shipped": true,
       "checksum_provenance": "Publisher SHA-256 from the PyPI JSON API."
     },
     {
@@ -364,6 +384,7 @@
       "archive": "numpy-1.26.4-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl",
       "sha256": "7ab55401287bfec946ced39700c053796e7cc0e3acbef09993a9ad2adba6ca6e",
       "role": "platform NumPy 1.26.x",
+      "shipped": true,
       "checksum_provenance": "Publisher SHA-256 from the PyPI JSON API."
     },
     {
@@ -375,6 +396,7 @@
       "archive": "cosign-linux-amd64",
       "sha256": "4629c757b7618056f8ddd7e2625ae9fdd94c0372a65049520bc7d9df9efc7f71",
       "role": "build tool that verifies Sigstore bundles in the fetch stage; never shipped",
+      "shipped": false,
       "checksum_provenance": "Publisher SHA-256 from the release's cosign_checksums.txt, matching a local computation."
     },
     {
@@ -386,6 +408,7 @@
       "archive": "cosign-linux-arm64",
       "sha256": "c5d324e091826b0d7a78eb16fef316450b4eb9aaec045611c08ba06f5e73220a",
       "role": "build tool that verifies Sigstore bundles in the fetch stage; never shipped",
+      "shipped": false,
       "checksum_provenance": "Publisher SHA-256 from the release's cosign_checksums.txt, matching a local computation."
     }
   ]

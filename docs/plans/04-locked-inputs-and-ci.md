@@ -160,12 +160,14 @@ Deliverables:
 
 Steps:
 
-- [ ] 1. Check the shipped versions against the year's lock: OIIO, OCIO, OpenEXR, Imath, Python, and NumPy, with OCIO also checked through OIIO's `library_list`.
-- [ ] 2. Check the glibc floor and the `GLIBC_` and `GLIBCXX_` symbol-version limits, and confirm `ldd` resolves every library.
-- [ ] 3. Check the image contents. Absent: compilers, CMake, headers, static archives, sources, and the excluded platform libraries (Qt, Boost, TBB, OpenVDB). Present: the `algernon` user and Bash.
-- [ ] 4. Strip shipped binaries. Keep debug copies only in the build stage.
-- [ ] 5. Collect the license and notice files for every shipped component, including statically linked dependencies, into the runtime image.
-- [ ] 6. Measure each year and architecture by its unpacked size, the sum of its layer sizes from `docker history --human=false`, and set a budget for each in `image-size-budgets.json`. Fail on an overrun that has not been reviewed. Do not use `docker image inspect .Size`, the metric ffmpeg-docker uses: with Docker Desktop's containerd image store it also counts the compressed layers. Phase 3 already moved the validator to the unpacked size.
+- [x] 1. Check the shipped versions against the year's lock: OIIO, OCIO, OpenEXR, Imath, Python, and NumPy, with OCIO also checked through OIIO's `library_list`.
+  - Finding: `library_list` names only the format libraries OIIO loads (OpenEXR, libtiff, libjpeg-turbo, libpng), so the validator checks all four there, and checks OCIO through OIIO's `opencolorio_version` attribute instead.
+- [x] 2. Check the glibc floor and the `GLIBC_` and `GLIBCXX_` symbol-version limits, and confirm `ldd` resolves every library.
+- [x] 3. Check the image contents. Absent: compilers, CMake, headers, static archives, sources, and the excluded platform libraries (Qt, Boost, TBB, OpenVDB). Present: the `algernon` user and Bash.
+- [x] 4. Strip shipped binaries. Keep debug copies only in the build stage.
+  - The builds have no `-g`, so the copies in `/opt/vfx-debug` hold symbol tables only. NumPy's wheel is installed unchanged, with its symbol tables, headers, and static helper libraries; the checks exempt its package directories.
+- [x] 5. Collect the license and notice files for every shipped component, including statically linked dependencies, into the runtime image.
+- [x] 6. Measure each year and architecture by its unpacked size, the sum of its layer sizes from `docker history --human=false`, and set a budget for each in `image-size-budgets.json`. Fail on an overrun that has not been reviewed. Do not use `docker image inspect .Size`, the metric ffmpeg-docker uses: with Docker Desktop's containerd image store it also counts the compressed layers. Phase 3 already moved the validator to the unpacked size.
 
 Completion evidence: the validator passes for all six images, and fails on a deliberate version mismatch, a missing library, a leftover compiler, and a size overrun.
 
@@ -244,5 +246,6 @@ Status: in progress.
 - Task 1 is complete; see [SOURCE_PROVENANCE.md](../SOURCE_PROVENANCE.md) and the [implementation log](../IMPLEMENTATION.md).
 - Task 2 is complete; see [BUILD_ENVIRONMENT.md](../BUILD_ENVIRONMENT.md). Locked RPMs install from each year's Rocky minor release, with a `vault` fallback that has not yet been exercised.
 - Task 3 is complete; see [IMAGE_SUPPORT.md](../IMAGE_SUPPORT.md). Every year and architecture passes `smoke_images.py`, and OIIO's formats outside the contract are disabled.
+- Task 4 is complete. `validate_image.py` runs 48 checks, including contents, stripping, and the shipped license files ([SOURCE_PROVENANCE.md](../SOURCE_PROVENANCE.md#shipped-licenses)), and fails on a version mismatch, a missing library, a leftover compiler, and a size overrun.
 
 Last updated: 2026-11-07

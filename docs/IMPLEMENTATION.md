@@ -2,6 +2,42 @@
 
 Record decisions that change project direction, specifications, runtime behavior, tests, validation, dependencies, deployment, or architecture. Link to plans rather than duplicating their details.
 
+## 2026-11-07: Validate Image Identity, Linkage, And Contents (Phase 4 Task 4)
+
+Request:
+
+- Work on Phase 4 Task 4.
+
+Decision:
+
+- `validate_image.py` grew from 36 to 48 checks. Added: libtiff, libjpeg-turbo, and libpng versions from OIIO's `library_list`; unstripped ELF files; compilers and build tools on the PATH directories; build-stage directories (`/src`, `/opt/deps`, `/opt/build-tools`, `/opt/rh`, `/opt/vfx-debug`, `/opt/vfx/include`); headers, static archives, and pkg-config or CMake files; Bash and the `algernon` user's UID, GID, and home; the license manifest against the lock; the license files against their hashes; and Rocky's `glibc` and `libgcc` license files. A `--lockfile` option checks an image against another lock.
+- OIIO's `library_list` names only the format libraries it loads, not OCIO, so OCIO stays checked through `opencolorio_version`, as the plan's step 1 otherwise intended.
+- NumPy's wheel is installed unchanged. Its C headers, `libnpymath.a`, `libnpyrandom.a`, `numpy.pc`, and unstripped extension modules are for building against NumPy, and the checks exempt its package directories.
+- The inventory found libpng's CMake package files in `/opt/vfx/lib/libpng`; the cleanup step now removes them. Nothing else was left over: no compiler, build tool, header, or build directory.
+- The strip step now keeps each shipped ELF file's symbols in `/opt/vfx-debug` with `objcopy --only-keep-debug`, in the compile stage only. The builds have no `-g`, so these hold symbol tables only.
+- Each lock entry has a `shipped` flag: false for NASM and `cosign`, true for the rest, including static and header-only code. `validate_lock.py` enforces it. `scripts/collect_licenses.py` copies every shipped component's notices into `/opt/vfx/share/licenses` with a `components.json` manifest of versions and file hashes; [SOURCE_PROVENANCE.md](SOURCE_PROVENANCE.md#shipped-licenses) describes the rules. Its new build arguments are declared just before its step, so the compile steps above kept their cache.
+- The size budgets were already in place from Phase 3 and needed no change.
+
+Affected areas:
+
+- The Dockerfile's compile stage, the three locks, `scripts/collect_licenses.py`, `scripts/validate_image.py`, `scripts/validate_lock.py`, SOURCE_PROVENANCE.md, PLATFORMS.md, the README, the mission, the Phase 4 plan, the roadmap, and this log.
+
+Validation:
+
+- `validate_lock.py` passes.
+- The collector, run against the CY2025 and CY2027 `sources` stages, found notices for every shipped component, including OpenEXR's vendored libdeflate, OpenJPH, and zstd. NumPy's notices cover the OpenBLAS and gfortran libraries its wheel bundles.
+- All six images were rebuilt on the pinned builder and pass all 48 `validate_image.py` checks and all 33 `smoke_images.py` checks. They ship 28 (CY2026), 30 (CY2025), and 46 (CY2027) notice files, and grew by 0.4–0.6 MB. Image IDs and sizes are in PLATFORMS.md.
+- Deliberate failures on CY2026 arm64, each failing its own check and exiting 1:
+  - a lock copy with NumPy 2.3.4: the NumPy version check, and the license manifest check, which compares versions against the same lock;
+  - an image with Rocky's `libssl.so.1.1` deleted: the unresolved-library check, naming Python's `_ssl` module. A first attempt deleted `libbz2`, which `rpm` itself needs, so the RPM query crashed before the linkage check;
+  - an image with a `/usr/bin/gcc`: the build-tool check;
+  - an image with 30 MB added: the size budget check.
+- The amd64 images were built and checked under emulation on an arm64 host.
+
+Follow-up:
+
+- Task 5 is next: reproducible builds.
+
 ## 2026-11-07: Define And Test The Image Support Contract (Phase 4 Task 3)
 
 Request:

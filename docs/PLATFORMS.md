@@ -30,12 +30,14 @@ Use `linux/amd64` for x86-64. Every image runs as the non-root user `algernon`, 
 - The libraries those need: OCIO, OpenEXR, Imath, libtiff, libpng, libjpeg-turbo, and zlib, all built from locked, checksum-verified sources.
 - Reading and writing OpenEXR, TIFF, PNG, JPEG, and DPX. [IMAGE_SUPPORT.md](IMAGE_SUPPORT.md) is the support contract.
 
-Each image was checked on `linux/amd64` and `linux/arm64` with `scripts/validate_image.py`, which passed all 36 of its checks. The checks cover:
+Each image was checked on `linux/amd64` and `linux/arm64` with `scripts/validate_image.py`, which passed all 48 of its checks. The checks cover:
 
 - tool, library, and Python versions against the lock;
 - glibc and `libstdc++` symbol versions against the base OS;
 - the runtime image's RPM set against its lock;
 - unresolved libraries and excluded components;
+- the contents: no compilers, build tools, build-stage directories, headers, static archives, or build configs outside NumPy's wheel; stripped binaries outside NumPy; Bash and the `algernon` user;
+- the license and notice files of every shipped component, against the lock and their recorded hashes ([SOURCE_PROVENANCE.md](SOURCE_PROVENANCE.md#shipped-licenses));
 - EXR, TIFF, PNG, and JPEG round trips, `maketx`, a NumPy read, and NumPy linear algebra;
 - an OCIO ACES2065-1 to ACEScg conversion;
 - the unpacked size against its budget.
@@ -135,16 +137,16 @@ The unpacked size is the disk space the image takes once pulled: the sum of its 
 
 `docker image inspect` reports a larger `.Size` on Docker Desktop, because its containerd image store adds the compressed layers to the unpacked ones. Use the figures here, not that one.
 
-The image IDs are from local builds made on 2026-11-07 with the pinned BuildKit builder, the locked RPM sets, and OIIO's formats outside the support contract disabled, tagged for testing; the images are not published to a registry, so there are no registry digests. Building with the bake file's own tags or the plain `docker build` gives images with the same layers and config but a different local image ID.
+The image IDs are from local builds made on 2026-11-07 with the pinned BuildKit builder, the locked RPM sets, OIIO's formats outside the support contract disabled, and the shipped license files, tagged for testing; the images are not published to a registry, so there are no registry digests. Building with the bake file's own tags or the plain `docker build` gives images with the same layers and config but a different local image ID.
 
 | Image | Platform | Image ID | Unpacked | Compressed |
 | --- | --- | --- | --- | --- |
-| cy2025 | linux/amd64 | `sha256:b39c4837d7a36e00a18062c917c654a586b1b8467e66514b6103914ae5fa09ce` | 271 MB | 88 MB |
-| cy2025 | linux/arm64 | `sha256:56cdfb428c4e38198dc43a5568b4e53e367ac2ecfb181b2a3349a32e4d0297ef` | 262 MB | 82 MB |
-| cy2026 | linux/amd64 | `sha256:ff6b813275084f4216af912efaa1255c1f93437413d21ff6316e40c76f378d92` | 247 MB | 84 MB |
-| cy2026 | linux/arm64 | `sha256:c548cd9f3b3ce1bb360af58deaca36c3ca9904e8ddd7c40767896e5ebf82acf2` | 255 MB | 79 MB |
-| cy2027 | linux/amd64 | `sha256:970080068cb32a97d9351d8277b4a5fa675cc8fc2f38f4a76327d63048b23e85` | 315 MB | 106 MB |
-| cy2027 | linux/arm64 | `sha256:edcaa93ca7012cd00c3e1bb97efe74256c22c3628faba9ff32e23336c3262b98` | 333 MB | 103 MB |
+| cy2025 | linux/amd64 | `sha256:50cd0c4969a7862a469e3c7ec367bad3c7edf7e33b9801516e2056797b43ed81` | 272 MB | 88 MB |
+| cy2025 | linux/arm64 | `sha256:bd655520b263870c15f99f8204f0b6ae16d2b7f8ae4f7e66c28c027f17c147a1` | 262 MB | 82 MB |
+| cy2026 | linux/amd64 | `sha256:603309374543059220bc53529de57f54189e1b1403e5a74208f70fa7609cebfd` | 247 MB | 84 MB |
+| cy2026 | linux/arm64 | `sha256:f9f6cb1b900c92254c7cec50f73e078a0d31d8eec352f922d6a724e7fce5698f` | 255 MB | 79 MB |
+| cy2027 | linux/amd64 | `sha256:8aef83472412d36a6b10799a492f048a70c97e3cdc593f81b03f6ba8d30d8f51` | 315 MB | 106 MB |
+| cy2027 | linux/arm64 | `sha256:222b219d0b10650120db52cb6a9e0ff1f347c8de52ffc589b92e3045584f217b` | 333 MB | 103 MB |
 
 The amd64 images were built and checked under emulation on an arm64 host. They have not yet been run on x86-64 hardware.
 

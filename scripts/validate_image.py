@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Check a platform-year image against its lock: versions, glibc ceiling, linkage, contents, and image I/O."""
+"""Check a platform-year image against its lock: versions, glibc ceiling, linkage, contents, licenses, and size."""
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -11,9 +12,40 @@ import sys
 import tempfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SHT_SYMTAB = 2
 SHT_GNU_VERDEF = 0x6FFFFFFD
 SHT_GNU_VERNEED = 0x6FFFFFFE
 EXCLUDED_LIBRARY_PATTERNS = ("libQt", "libboost", "libtbb", "libopenvdb", "libPtex", "libraw", "libavcodec")
+# NumPy's wheel ships C headers, static helper libraries, and a pkg-config file for building extensions, and
+# its binaries keep their symbol tables. It is installed unchanged, so its package directories are exempt.
+NUMPY_PACKAGE = re.compile(r"/site-packages/numpy(\.libs)?/")
+
+# Runs in the image: build tools on the PATH directories, build-stage directories, development files outside
+# NumPy, and the shell and user the README relies on.
+CONTENTS = r"""
+import json, os, pwd, re, shutil
+path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/vfx/bin"
+tools = sorted(name for name in ("gcc", "g++", "cc", "c++", "cpp", "clang", "ld", "as", "ar", "make", "cmake",
+                                  "ninja", "nasm", "pkg-config", "pkgconf", "strip", "objcopy", "objdump", "gdb")
+               if shutil.which(name, path=path))
+for directory in path.split(":"):
+    if os.path.isdir(directory):
+        tools += sorted(name for name in os.listdir(directory)
+                        if re.match(r"^(.+-)?(gcc|g\+\+|c\+\+|ld)(-[\d.]+)?$", name))
+directories = [d for d in ("/src", "/opt/deps", "/opt/build-tools", "/opt/rh", "/opt/vfx-debug", "/opt/vfx/include")
+               if os.path.exists(d)]
+development = []
+for top in ("/opt/vfx", "/usr/include", "/usr/local"):
+    for root, _dirs, files in os.walk(top):
+        for name in files:
+            full = os.path.join(root, name)
+            if re.search(r"\.(h|hh|hpp|hxx|inl|a|la|pc|cmake)$", name) and not re.search(NUMPY, full):
+                development.append(full)
+user = pwd.getpwnam("algernon")
+print(json.dumps({"tools": sorted(set(tools)), "directories": directories, "development": sorted(development),
+                  "bash": os.access("/bin/bash", os.X_OK),
+                  "user": [user.pw_uid, user.pw_gid, user.pw_dir, os.stat(user.pw_dir).st_uid]}))
+""".replace("NUMPY", repr(NUMPY_PACKAGE.pattern))
 
 
 def run(args, check=True):
@@ -64,6 +96,18 @@ def elf_symbol_versions(path):
     return required, defined
 
 
+def elf_has_symtab(path):
+    """Whether an ELF64 little-endian file still has a symbol table section, that is, is not stripped."""
+    with open(path, "rb") as handle:
+        data = handle.read()
+    if data[:4] != b"\x7fELF" or data[4] != 2 or data[5] != 1:
+        return False
+    shoff, = struct.unpack_from("<Q", data, 0x28)
+    shentsize, shnum = struct.unpack_from("<HH", data, 0x3A)
+    return any(struct.unpack_from("<I", data, shoff + index * shentsize + 4)[0] == SHT_SYMTAB
+               for index in range(shnum))
+
+
 def max_version(names, prefix):
     versions = [name for name in names if name.startswith(prefix) and re.match(r"^" + prefix + r"[\d.]+$", name)]
     return max(versions, key=version_key) if versions else None
@@ -96,14 +140,17 @@ def main():
     parser.add_argument("--image", required=True)
     parser.add_argument("--platform", required=True, choices=("linux/amd64", "linux/arm64"))
     parser.add_argument("--year", required=True, help="platform year lock name, for example cy2026")
+    parser.add_argument("--lockfile", help="lock to check against (default: build/locks/<year>.json)")
     parser.add_argument("--metadata", help="write results as JSON to this path")
     args = parser.parse_args()
 
-    with open(os.path.join(REPO, "build", "locks", args.year + ".json")) as lock_file:
+    with open(args.lockfile or os.path.join(REPO, "build", "locks", args.year + ".json")) as lock_file:
         lock = json.load(lock_file)
-    pins = {}
+    pins, shipped = {}, {}
     for dependency in lock["dependencies"]:
         pins[dependency["name"]] = dependency["version"]
+        if dependency["shipped"] and dependency.get("platform", args.platform) == args.platform:
+            shipped[dependency["name"]] = dependency["version"]
     spec = lock["specification"]
     check = Checker(args.image, args.platform)
 
@@ -145,8 +192,11 @@ def main():
     check.expect("installed Imath library series", versions["imath"], [".".join(pins["imath"].split(".")[:2])])
     libraries = versions["libraries"]
     check.results["library_list"] = libraries
-    match = re.search(r"OpenEXR ([\d.]+)", libraries)
-    check.expect("OIIO OpenEXR dependency", match.group(1) if match else None, pins["openexr"])
+    # library_list names the format libraries OIIO loaded; OCIO is checked above through opencolorio_version.
+    for label, pattern, pin in (("OpenEXR", r"OpenEXR ([\d.]+)", "openexr"), ("libtiff", r"LIBTIFF Version ([\d.]+)", "libtiff"),
+                                ("libjpeg-turbo", r"jpeg-turbo ([\d.]+)", "libjpeg-turbo"), ("libpng", r"libpng ([\d.]+)", "libpng")):
+        match = re.search(pattern, libraries)
+        check.expect("OIIO {0} dependency".format(label), match.group(1) if match else None, pins[pin])
     glibc = re.search(r"([\d.]+)\s*$", check.docker("ldd", "--version").splitlines()[0]).group(1)
     check.expect("runtime glibc", glibc, spec["glibc"])
     # The runtime stage installs no RPMs, so its package set is the digest-pinned base image's.
@@ -168,7 +218,7 @@ def main():
     finally:
         run(["docker", "rm", container])
     libstdcxx_max = max_version(elf_symbol_versions(os.path.join(work, "libstdc++.so.6"))[1], "GLIBCXX_")
-    worst_glibc, worst_glibcxx, excluded = "GLIBC_0", "GLIBCXX_0", []
+    worst_glibc, worst_glibcxx, excluded, unstripped, elf_count = "GLIBC_0", "GLIBCXX_0", [], [], 0
     for root, _dirs, files in os.walk(os.path.join(work, "vfx")):
         for name in files:
             path = os.path.join(root, name)
@@ -179,6 +229,9 @@ def main():
             versions_found = elf_symbol_versions(path)
             if not versions_found:
                 continue
+            elf_count += 1
+            if elf_has_symtab(path) and not NUMPY_PACKAGE.search(path):
+                unstripped.append(os.path.relpath(path, work))
             for prefix, current in (("GLIBC_", worst_glibc), ("GLIBCXX_", worst_glibcxx)):
                 highest = max_version(versions_found[0], prefix)
                 if highest and version_key(highest) > version_key(current):
@@ -191,6 +244,41 @@ def main():
     check.results["symbol_versions"] = {"glibc": worst_glibc, "glibcxx": worst_glibcxx, "base_libstdcxx": libstdcxx_max}
     print("INFO highest required {0} and {1}; base libstdc++ provides {2}".format(worst_glibc, worst_glibcxx, libstdcxx_max))
     check.expect("excluded platform libraries present", excluded, [])
+    check.expect("unstripped ELF files outside NumPy", unstripped, [])
+    print("INFO {0} shipped ELF files".format(elf_count))
+
+    contents = json.loads(check.docker("python3", "-c", CONTENTS).strip().splitlines()[-1])
+    check.expect("compilers and build tools present", contents["tools"], [])
+    check.expect("build-stage directories present", contents["directories"], [])
+    check.expect("headers, static archives, and build configs outside NumPy", contents["development"], [])
+    check.expect("bash present", contents["bash"], True)
+    check.expect("algernon user (uid, gid, home, home owner)", contents["user"], [1000, 1000, "/home/algernon", 1000])
+
+    # Every shipped component's notices are in /opt/vfx/share/licenses, listed with their hashes in
+    # components.json; the Rocky runtime libraries' notices are the base image's own.
+    licenses = os.path.join(work, "vfx", "share", "licenses")
+    with open(os.path.join(licenses, "components.json")) as manifest_file:
+        manifest = json.load(manifest_file)
+    listed = {component["name"]: component["version"] for component in manifest["components"]}
+    check.expect("license manifest components match the lock", listed, shipped)
+    problems = []
+    for component in manifest["components"]:
+        if not component["files"]:
+            problems.append(component["name"] + ": no files")
+        for entry in component["files"]:
+            path = os.path.join(licenses, entry["path"])
+            if not os.path.isfile(path):
+                problems.append(entry["path"] + ": missing")
+                continue
+            with open(path, "rb") as notice:
+                if hashlib.sha256(notice.read()).hexdigest() != entry["sha256"]:
+                    problems.append(entry["path"] + ": hash differs")
+    check.expect("license files present and matching the manifest", problems, [])
+    print("INFO {0} license and notice files for {1} components".format(
+        sum(len(component["files"]) for component in manifest["components"]), len(listed)))
+    rocky = check.docker("ls", "/usr/share/licenses").split()
+    check.expect("Rocky glibc and libgcc license files present", [name for name in ("glibc", "libgcc") if name in rocky],
+                 ["glibc", "libgcc"])
 
     # The minimal runtime has no find, so walk /opt/vfx with the image's own Python and ldd each ELF file.
     # Libraries that wheels bundle in a *.libs directory rely on the extension that loads them for their
