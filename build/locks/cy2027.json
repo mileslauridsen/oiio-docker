@@ -16,17 +16,64 @@
   "toolchain": {
     "builder_image": {
       "reference": "rockylinux/rockylinux:9.8",
-      "index_digest": "sha256:8101994123cf3d0a8fee517bee7f39e555c7d92bd2d9eb3303cc988a0eeed00f"
+      "index_digest": "sha256:8101994123cf3d0a8fee517bee7f39e555c7d92bd2d9eb3303cc988a0eeed00f",
+      "platform_manifests": {
+        "linux/amd64": "sha256:ed654c694190a670bb5c33f68995b862214fc96ffbdca95e07a8935ba0a3717d",
+        "linux/arm64": "sha256:67492e5a371d9db7c2ffb2708abae92147fb900900832a7ed3fb2ac4df9ec052"
+      }
     },
     "runtime_image": {
       "reference": "rockylinux/rockylinux:9.8-minimal",
-      "index_digest": "sha256:e1d0a9f5ed99d52e7faf03afe7ee32e48b231c4dd9586808b3d1aedf894dff04"
+      "index_digest": "sha256:e1d0a9f5ed99d52e7faf03afe7ee32e48b231c4dd9586808b3d1aedf894dff04",
+      "platform_manifests": {
+        "linux/amd64": "sha256:8c5ffaa82079057f9d5206379996763a491f0cea9ef0e27c1395557ecd0f5bef",
+        "linux/arm64": "sha256:e6776253547e9cd64a31a18323325a7f30e6460a0de62750d571a3b5768894fb"
+      }
     },
     "gcc_toolset": "14",
-    "builder_packages": [
-      "gcc-toolset-14-gcc-c++-14.2.1-13.el9",
-      "cmake-3.31.8-3.el9"
-    ]
+    "rpm": {
+      "repo_file": "rpm/cy2027/rocky.repo",
+      "requested": [
+        "gcc-toolset-14-gcc-c++",
+        "cmake",
+        "make",
+        "patch",
+        "tar",
+        "xz",
+        "findutils",
+        "pkgconf-pkg-config",
+        "bzip2-devel",
+        "xz-devel",
+        "libffi-devel",
+        "openssl-devel"
+      ],
+      "builder_packages": {
+        "linux/amd64": "rpm/cy2027/builder-amd64.packages",
+        "linux/arm64": "rpm/cy2027/builder-arm64.packages"
+      },
+      "resolved_packages": {
+        "linux/amd64": "rpm/cy2027/resolved-amd64.packages",
+        "linux/arm64": "rpm/cy2027/resolved-arm64.packages"
+      },
+      "runtime_packages": {
+        "linux/amd64": "rpm/cy2027/runtime-amd64.packages",
+        "linux/arm64": "rpm/cy2027/runtime-arm64.packages"
+      }
+    },
+    "tools": {
+      "gcc": "gcc-toolset-14-gcc-0:14.2.1-13.el9",
+      "g++": "gcc-toolset-14-gcc-c++-0:14.2.1-13.el9",
+      "binutils": "gcc-toolset-14-binutils-0:2.41-6.el9",
+      "cmake": "cmake-0:3.31.8-3.el9",
+      "make": "make-1:4.3-8.el9",
+      "glibc": "glibc-0:2.34-266.el9_8"
+    },
+    "cpu_baselines": {
+      "amd64_march": "x86-64-v2",
+      "linux/amd64": "-march=x86-64-v2 -mtune=generic",
+      "linux/arm64": "-march=armv8-a -mtune=generic",
+      "oiio_use_simd": ""
+    }
   },
   "dependencies": [
     {

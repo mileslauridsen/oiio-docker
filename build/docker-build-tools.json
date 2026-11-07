@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "dockerfile_frontend": {
+    "reference": "docker/dockerfile:1.7.1",
+    "index_digest": "sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e"
+  },
+  "buildkit": {
+    "reference": "moby/buildkit:v0.33.1",
+    "index_digest": "sha256:cec9f139f45e93c5c69c60f8b07cfad9f43f4ef6b6a6cd917527fea5ff2e3dea",
+    "builder_name": "oiio-pinned"
+  },
+  "observed": {
+    "buildx_cli": "0.38.1",
+    "docker_engine": "29.9.2"
+  }
+}

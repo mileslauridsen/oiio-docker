@@ -1,0 +1,17 @@
+# Rocky Linux 9.8 only, never a later minor release. Rocky keeps superseded builds
+# within a minor release; once 9.8 is retired its tree moves from pub to vault.
+[baseos]
+name=Rocky Linux 9.8 - BaseOS
+baseurl=https://dl.rockylinux.org/pub/rocky/9.8/BaseOS/$basearch/os/
+        https://dl.rockylinux.org/vault/rocky/9.8/BaseOS/$basearch/os/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Rocky-9
+enabled=1
+
+[appstream]
+name=Rocky Linux 9.8 - AppStream
+baseurl=https://dl.rockylinux.org/pub/rocky/9.8/AppStream/$basearch/os/
+        https://dl.rockylinux.org/vault/rocky/9.8/AppStream/$basearch/os/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Rocky-9
+enabled=1

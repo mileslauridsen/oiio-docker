@@ -6,27 +6,36 @@ ARG PLATFORM_YEAR=cy2026
 ARG BUILDER_IMAGE=rockylinux/rockylinux:8.10@sha256:e8a49c5403b687db05d4d67333fa45808fbe74f36e683cec7abb1f7d0f2338c6
 ARG RUNTIME_IMAGE=rockylinux/rockylinux:8.10-minimal@sha256:6d2ede107b4f005a638728711dae05d5fbbfd8abd521cecf5ab61196b361c965
 ARG GCC_TOOLSET=14
+ARG AMD64_MARCH=x86-64
 ARG CXX_STANDARD=20
 ARG PYTHON_MAJOR_MINOR=3.13
 ARG BUILD_JOBS=8
 
 FROM ${BUILDER_IMAGE} AS builder
 
+ARG PLATFORM_YEAR
 ARG GCC_TOOLSET
+ARG AMD64_MARCH
 ARG TARGETARCH
 ENV LC_ALL=C LANG=C TZ=UTC
 
-RUN set -eu; \
+# Install the year's exact RPM closure from its pinned Rocky minor release, and fail if the
+# installed set differs from the lock. build/rpm/<year> holds the repo file and package lists.
+RUN --mount=type=bind,source=build/rpm/${PLATFORM_YEAR},target=/build/rpm/${PLATFORM_YEAR} \
+    --mount=type=bind,source=build/verify_rpm_lock.py,target=/build/verify_rpm_lock.py \
+    set -eu; \
     test "$TARGETARCH" = amd64 -o "$TARGETARCH" = arm64; \
-    dnf -y install \
-        gcc-toolset-${GCC_TOOLSET}-gcc-c++ cmake make patch tar xz findutils pkgconf-pkg-config \
-        bzip2-devel xz-devel libffi-devel openssl-devel; \
+    dnf -y --setopt=reposdir=/build/rpm/${PLATFORM_YEAR} --setopt=install_weak_deps=False install \
+        $(cat /build/rpm/${PLATFORM_YEAR}/builder-${TARGETARCH}.packages); \
+    PY=$(command -v python3 || echo /usr/libexec/platform-python); \
+    "$PY" /build/verify_rpm_lock.py "$PLATFORM_YEAR" "$TARGETARCH"; \
     dnf clean all
 
-# Compile generic x86-64-v1 or ARMv8-A code with the platform's gcc-toolset compiler.
+# Compile generic code with the platform's gcc-toolset compiler: ARMv8-A on arm64, and on amd64 the
+# year's AMD64_MARCH baseline (x86-64-v2 for Rocky 9, which itself requires it).
 RUN set -eu; \
     case "$TARGETARCH" in \
-        amd64) CPU_FLAGS='-march=x86-64 -mtune=generic' ;; \
+        amd64) CPU_FLAGS="-march=${AMD64_MARCH} -mtune=generic" ;; \
         arm64) CPU_FLAGS='-march=armv8-a -mtune=generic' ;; \
     esac; \
     TOOLSET=/opt/rh/gcc-toolset-${GCC_TOOLSET}/root/usr/bin; \
@@ -195,7 +204,8 @@ RUN --network=none if [ -d /src/nanobind ]; then \
     fi
 
 # Install OpenImageIO with only the tools, Python bindings, and image-format plugins in scope.
-# OIIO 3.2 and later build nanobind bindings; earlier releases use pybind11.
+# OIIO 3.2 and later build nanobind bindings; earlier releases use pybind11. An empty USE_SIMD adds no
+# SIMD flags, so the -march baseline alone sets the instruction set.
 RUN --network=none set -eu; \
     BINDINGS=""; \
     if [ -d /opt/deps/nanobind ]; then \
@@ -204,7 +214,7 @@ RUN --network=none set -eu; \
     cd /src/openimageio && \
     vfx-cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/opt/vfx -DOIIO_BUILD_TESTS=OFF -DOIIO_BUILD_TOOLS=ON $BINDINGS \
         -DBUILD_DOCS=OFF -DINSTALL_DOCS=OFF -DINSTALL_FONTS=OFF -DOIIO_DOWNLOAD_MISSING_TESTDATA=OFF \
-        -DUSE_PYTHON=ON -DPYTHON_VERSION=${PYTHON_MAJOR_MINOR} -DPython_EXECUTABLE=/opt/vfx/bin/python3 \
+        -DUSE_SIMD= -DUSE_PYTHON=ON -DPYTHON_VERSION=${PYTHON_MAJOR_MINOR} -DPython_EXECUTABLE=/opt/vfx/bin/python3 \
         -DENABLE_Freetype=OFF -DENABLE_OpenCV=OFF -DENABLE_TBB=OFF -DENABLE_DCMTK=OFF -DENABLE_FFmpeg=OFF \
         -DENABLE_GIF=OFF -DENABLE_Libheif=OFF -DENABLE_LibRaw=OFF -DENABLE_OpenJPEG=OFF -DENABLE_openjph=OFF \
         -DENABLE_OpenVDB=OFF -DENABLE_Ptex=OFF -DENABLE_WebP=OFF -DENABLE_JXL=OFF -DENABLE_libuhdr=OFF \

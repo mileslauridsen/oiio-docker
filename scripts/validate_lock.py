@@ -119,19 +119,67 @@ def validate_year(year, helper, targets, key_cache):
         version = by_name[name][0]["version"]
         require(series(version) == spec[key], "%s %s %s is not in the specified %s series" % (year, name, version, spec[key]))
     require(toolchain["gcc_toolset"] == spec["gcc"].split(".")[0], "%s gcc-toolset differs from the specified gcc" % year)
-    require(any(package.startswith("gcc-toolset-%s-gcc-c++-%s" % (toolchain["gcc_toolset"], spec["gcc"]))
-                for package in toolchain["builder_packages"]), "%s builder gcc package differs from gcc %s" % (year, spec["gcc"]))
+    require(toolchain["tools"]["g++"].startswith("gcc-toolset-%s-gcc-c++-0:%s." % (toolchain["gcc_toolset"], spec["gcc"])),
+            "%s builder g++ %s differs from gcc %s" % (year, toolchain["tools"]["g++"], spec["gcc"]))
+    validate_rpm_lock(year, toolchain)
 
     builder = "%s@%s" % (toolchain["builder_image"]["reference"], toolchain["builder_image"]["index_digest"])
     runtime = "%s@%s" % (toolchain["runtime_image"]["reference"], toolchain["runtime_image"]["index_digest"])
     expected_args = {"PLATFORM_YEAR": year, "BUILDER_IMAGE": builder, "RUNTIME_IMAGE": runtime,
-                     "GCC_TOOLSET": toolchain["gcc_toolset"], "CXX_STANDARD": spec["cxx_standard"],
-                     "PYTHON_MAJOR_MINOR": spec["python"]}
+                     "GCC_TOOLSET": toolchain["gcc_toolset"], "AMD64_MARCH": toolchain["cpu_baselines"]["amd64_march"],
+                     "CXX_STANDARD": spec["cxx_standard"], "PYTHON_MAJOR_MINOR": spec["python"]}
     target = targets.get(year)
     require(target is not None, "docker-bake.hcl has no %s target" % year)
     for arg, value in expected_args.items():
         require(target.get(arg) == value, "docker-bake.hcl %s %s is %s, lock says %s" % (year, arg, target.get(arg), value))
     return expected_args, len(dependencies)
+
+
+def validate_rpm_lock(year, toolchain):
+    rpm = toolchain["rpm"]
+    minor = toolchain["builder_image"]["reference"].rsplit(":", 1)[1]
+    require(toolchain["runtime_image"]["reference"].endswith(":%s-minimal" % minor),
+            "%s runtime image is not the builder's Rocky %s release" % (year, minor))
+    for key in ("builder_image", "runtime_image"):
+        manifests = toolchain[key].get("platform_manifests", {})
+        require(sorted(manifests) == list(PLATFORMS) and all(re.match(r"^sha256:[0-9a-f]{64}$", digest)
+                                                             for digest in manifests.values()),
+                "%s %s needs an amd64 and an arm64 manifest digest" % (year, key))
+
+    # The repo file may name only this Rocky minor release, from pub or, once it is retired, vault.
+    repo = (ROOT / "build" / rpm["repo_file"]).read_text(encoding="utf-8")
+    urls = re.findall(r"https?://\S+", repo)
+    require(urls and all(re.match(r"^https://dl\.rockylinux\.org/(pub|vault)/rocky/%s/" % re.escape(minor), url)
+                         for url in urls), "%s repo file must name only Rocky %s over HTTPS" % (year, minor))
+    require("mirrorlist" not in repo and "gpgcheck=0" not in repo,
+            "%s repo file must not use mirror lists or disable package signature checks" % year)
+
+    for platform in PLATFORMS:
+        lists = {}
+        for kind in ("builder", "resolved", "runtime"):
+            path = ROOT / "build" / rpm["%s_packages" % kind][platform]
+            lists[kind] = path.read_text(encoding="utf-8").splitlines()
+            require(lists[kind] and lists[kind] == sorted(set(lists[kind])),
+                    "%s %s is empty, unsorted, or has duplicates" % (year, path.relative_to(ROOT)))
+        resolved = set(lists["resolved"])
+        require(set(lists["builder"]) <= resolved, "%s %s builder packages are not all in the resolved set" % (year, platform))
+        unpinned = [line for line in lists["builder"] if not re.match(r"^[^ ]+-\d+:[^-]+-[^-]+\.[a-z0-9_]+$", line)]
+        require(not unpinned, "%s %s builder packages need an exact NEVRA: %s" % (year, platform, unpinned[:3]))
+        stripped = {re.sub(r"\.[^.]+$", "", package) for package in resolved}
+        for name in rpm["requested"]:
+            require(any(package.startswith(name + "-") and re.match(r"^\d+:", package[len(name) + 1:])
+                        for package in stripped), "%s %s requested package %s is not resolved" % (year, platform, name))
+        for tool, package in toolchain["tools"].items():
+            require(package in stripped, "%s %s %s %s is not in the resolved set" % (year, platform, tool, package))
+
+
+def validate_build_tools(text):
+    tools = json.loads((ROOT / "build" / "docker-build-tools.json").read_text(encoding="utf-8"))
+    frontend = tools["dockerfile_frontend"]
+    require(text.startswith("# syntax=%s@%s\n" % (frontend["reference"], frontend["index_digest"])),
+            "the Dockerfile frontend differs from build/docker-build-tools.json")
+    require(re.match(r"^moby/buildkit:v[\d.]+$", tools["buildkit"]["reference"]) and
+            re.match(r"^sha256:[0-9a-f]{64}$", tools["buildkit"]["index_digest"]), "BuildKit must be pinned by digest")
 
 
 def validate_dockerfile(current_args):
@@ -142,6 +190,9 @@ def validate_dockerfile(current_args):
     body = "\n".join(line for line in text.splitlines() if not line.startswith("# syntax="))
     require(re.search(r"https?://", body) is None, "the Dockerfile must not name source URLs; locks own them")
     require("--network=none" in text, "compile steps must run without network access")
+    require(re.search(r"\bdnf\b[^\n]*\b(update|upgrade)\b", text) is None, "the Dockerfile must not run dnf update or upgrade")
+    require("verify_rpm_lock.py" in text, "the builder must verify its installed RPM set")
+    validate_build_tools(text)
 
 
 def rejection(arguments, expected_text, extraction):

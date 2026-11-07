@@ -114,14 +114,15 @@ Deliverables:
 
 Steps:
 
-- [ ] 1. Pin `rockylinux/rockylinux:8.10`, `:9.8`, and their minimal runtime variants by multi-platform index digest. Record the amd64 and arm64 manifest digests.
-- [ ] 2. Lock the exact name, version, and release of every installed RPM, including the build tools and transitive dependencies, for each base image and architecture.
+- [x] 1. Pin `rockylinux/rockylinux:8.10`, `:9.8`, and their minimal runtime variants by multi-platform index digest. Record the amd64 and arm64 manifest digests.
+- [x] 2. Lock the exact name, version, and release of every installed RPM, including the build tools and transitive dependencies, for each base image and architecture.
   - `verify_rpm_lock.py` runs inside the build and fails it if the installed set differs.
   - Decide and document how locked packages stay installable.
-- [ ] 3. Record the identities of gcc, binutils, CMake, Ninja or Make, and glibc. Remove unrestricted `dnf update` from the build.
-- [ ] 4. Set explicit per-architecture CPU baselines and OIIO SIMD options. Do not tune for the host.
-- [ ] 5. Pin the Dockerfile frontend and BuildKit image by digest, using the same versions as ffmpeg-docker unless there is a reason to differ: `docker/dockerfile:1.7.1` and `moby/buildkit:v0.33.1`. Record the Buildx version, and document how to create the pinned builder.
-- [ ] 6. Run two independent `--no-cache` builds per year and architecture, and confirm the source, package, base-image, and toolchain identities match.
+  - Decision: install exact builds from the year's own Rocky minor release, at its `pub` path with the `vault` path as a fallback. Rocky keeps superseded builds within a minor release and moves a retired release to `vault`. See [BUILD_ENVIRONMENT.md](../BUILD_ENVIRONMENT.md#rpm-packages).
+- [x] 3. Record the identities of gcc, binutils, CMake, Ninja or Make, and glibc. Remove unrestricted `dnf update` from the build.
+- [x] 4. Set explicit per-architecture CPU baselines and OIIO SIMD options. Do not tune for the host.
+- [x] 5. Pin the Dockerfile frontend and BuildKit image by digest, using the same versions as ffmpeg-docker unless there is a reason to differ: `docker/dockerfile:1.7.1` and `moby/buildkit:v0.33.1`. Record the Buildx version, and document how to create the pinned builder.
+- [x] 6. Run two independent `--no-cache` builds per year and architecture, and confirm the source, package, base-image, and toolchain identities match.
 
 Completion evidence: identical input identities across clean builds for every year and architecture. A modified package set fails the build.
 
@@ -240,5 +241,6 @@ Completion evidence: a recorded hosted run in which all six image jobs pass, and
 Status: in progress.
 
 - Task 1 is complete; see [SOURCE_PROVENANCE.md](../SOURCE_PROVENANCE.md) and the [implementation log](../IMPLEMENTATION.md).
+- Task 2 is complete; see [BUILD_ENVIRONMENT.md](../BUILD_ENVIRONMENT.md). Locked RPMs install from each year's Rocky minor release, with a `vault` fallback that has not yet been exercised.
 
-Last updated: 2026-11-03
+Last updated: 2026-11-05

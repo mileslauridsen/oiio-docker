@@ -2,6 +2,41 @@
 
 Record decisions that change project direction, specifications, runtime behavior, tests, validation, dependencies, deployment, or architecture. Link to plans rather than duplicating their details.
 
+## 2026-11-05: Pin The Build Environment (Phase 4 Task 2)
+
+Request:
+
+- Work on Phase 4 Task 2.
+
+Decision:
+
+- Keep locked RPMs installable by installing exact builds from each year's own Rocky minor release. Evidence: Rocky 8.10's BaseOS still offered seven `openssl-devel` builds, so superseded builds stay in a minor release; and a retired release (9.7) keeps only a README under `pub` while `vault` serves its repositories. `build/rpm/<year>/rocky.repo` names BaseOS and AppStream at `pub/rocky/<minor>/`, with `vault/rocky/<minor>/` as dnf's fallback URL, over HTTPS with package signature checks and no mirror list.
+- `build/rpm/<year>/` holds per-architecture lists: the exact NEVRAs to install (`builder-*`), the full installed builder set (`resolved-*`), and the runtime base's set (`runtime-*`). The Dockerfile installs the builder list with weak dependencies off, and `build/verify_rpm_lock.py` fails the build on any difference. The requested packages moved from the Dockerfile to each lock's `toolchain.rpm.requested`; `scripts/resolve_rpm_lock.py` regenerates the lists.
+- Each lock records both per-architecture manifest digests for its base images, and the gcc, g++, binutils, CMake, Make, and glibc versions in `toolchain.tools`. They match what the builds used before: for example, CY2026 gcc 14.2.1-11.el8_10 and CMake 3.26.5-2.el8. Ninja is not used.
+- CPU baselines are per year, set by a new `AMD64_MARCH` bake argument and recorded in `toolchain.cpu_baselines`. CY2025 and CY2026 keep x86-64-v1. CY2027 moves to x86-64-v2, which Rocky 9 itself requires, so no hardware is lost. OIIO is configured with an explicit empty `USE_SIMD`, so the `-march` baseline alone sets its SIMD. For OIIO 3.2 this replaces its own `sse4.2` default with the same features from `-march`.
+- Pin BuildKit to `moby/buildkit:v0.33.1` by digest, matching ffmpeg-docker, through a `docker-container` builder named `oiio-pinned`. The Dockerfile frontend was already pinned. `build/docker-build-tools.json` records both, plus the observed Buildx 0.38.1 and Docker Engine 29.9.2.
+- `validate_lock.py` now checks the repo files, package lists, requested packages, tool versions, manifest digests, the CPU baseline arguments, the frontend digest, and that the Dockerfile runs no `dnf update`. `validate_image.py` checks the runtime RPM set.
+- Document the environment in [BUILD_ENVIRONMENT.md](BUILD_ENVIRONMENT.md).
+
+Affected areas:
+
+- The Dockerfile's builder stage and OIIO configure step, `docker-bake.hcl`, the three locks, `build/rpm/`, `build/verify_rpm_lock.py`, `build/docker-build-tools.json`, `scripts/resolve_rpm_lock.py`, `scripts/validate_lock.py`, `scripts/validate_image.py`, BUILD_ENVIRONMENT.md, PLATFORMS.md, the README, the mission, the Phase 4 plan, the roadmap, and this log.
+
+Validation:
+
+- `scripts/resolve_rpm_lock.py` resolved all three years on both architectures. Package counts are in BUILD_ENVIRONMENT.md; the architectures differ only by `glibc-headers` (CY2027 x86_64) and `libatomic` (in the CY2027 arm64 base).
+- Run against the unmodified Rocky 8.10 base, `verify_rpm_lock.py` failed, listing the missing packages and the three older base builds the lock upgrades.
+- Two `--no-cache` builds of the `sources` stage on the pinned builder, for each year and architecture, produced identical identity records: base image digest, RPM manifest digest, and every source checksum and signature. RPM manifest SHA-256s: CY2025 `182ee783…` (amd64) and `fee22e1d…` (arm64); CY2026 `f6e79733…` and `dbcd7b8e…`; CY2027 `8160a979…` and `fc3f6558…`.
+- All six images were built on the pinned builder and passed all 36 validator checks, including the new runtime RPM check. Unpacked sizes are unchanged except CY2027 amd64, which grew by 200,704 bytes to 316,108,800, within its budget.
+- Compared file by file with the Task 1 images, CY2026 arm64 differs only in the six known build-date files. CY2027 amd64 differs in 89 of 1,587 files, all compiled code, from the x86-64-v2 baseline. Its OIIO still reports `sse2,sse3,ssse3,sse41,sse42`.
+- The amd64 images were built and checked under emulation on an arm64 host.
+
+Follow-up:
+
+- When Rocky retires 8.10 or 9.8, confirm a cold build installs through the `vault` fallback.
+- Confirm the CPU baselines against the production workers.
+- Task 3 is next: the image support contract and `smoke_images.py`.
+
 ## 2026-11-03: Verify Sigstore Bundles Offline
 
 Request:

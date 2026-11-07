@@ -149,6 +149,15 @@ def main():
     check.expect("OIIO OpenEXR dependency", match.group(1) if match else None, pins["openexr"])
     glibc = re.search(r"([\d.]+)\s*$", check.docker("ldd", "--version").splitlines()[0]).group(1)
     check.expect("runtime glibc", glibc, spec["glibc"])
+    # The runtime stage installs no RPMs, so its package set is the digest-pinned base image's.
+    runtime_lock = os.path.join(REPO, "build", lock["toolchain"]["rpm"]["runtime_packages"][args.platform])
+    with open(runtime_lock) as runtime_file:
+        expected_rpms = runtime_file.read().splitlines()
+    actual_rpms = sorted(check.docker("rpm", "-qa", "--qf", "%{NAME}-%{EPOCHNUM}:%{VERSION}-%{RELEASE}.%{ARCH}\\n").splitlines())
+    check.expect("runtime RPM set matches lock", actual_rpms == expected_rpms, True)
+    if actual_rpms != expected_rpms:
+        print("  missing: {0}\n  unexpected: {1}".format(sorted(set(expected_rpms) - set(actual_rpms)),
+                                                       sorted(set(actual_rpms) - set(expected_rpms))))
 
     work = tempfile.mkdtemp(prefix="oiio-validate-")
     os.chmod(work, 0o777)

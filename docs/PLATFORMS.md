@@ -109,7 +109,7 @@ Deviations:
 
 - **ACES:** OCIO 2.6's default built-in config is `cg-config-v5.0.0_aces-v2.1_ocio-v2.6` (ACES 2.1). The ACES 2.0 configs that CY2027 specifies are still built in. To use one, set `OCIO=ocio://cg-config-v4.0.0_aces-v2.0_ocio-v2.5` or `OCIO=ocio://studio-config-v4.0.0_aces-v2.0_ocio-v2.5`. Both were checked on arm64: OCIO loads them, and an ACES2065-1 to ACEScg conversion works in PyOpenColorIO and in OIIO.
 - **OIIO:** 3.2.2.0 in place of ASWF's reference pin 3.2.1.1. OIIO 3.2 builds its Python bindings with nanobind, its new default, instead of pybind11. OCIO still uses pybind11.
-- **CPU baseline:** OIIO 3.2's amd64 build defaults to SSE4.2 (x86-64-v2). Rocky Linux 9 already requires x86-64-v2 hardware, so this adds no new requirement.
+- **CPU baseline:** amd64 code compiles for x86-64-v2, so OIIO uses SSE4.2. Rocky Linux 9 already requires x86-64-v2 hardware, so this adds no new requirement.
 
 Highest symbol versions required: `GLIBC_2.34` and `GLIBCXX_3.4.29`. `GLIBCXX_3.4.29` is the most Rocky 9's `libstdc++` provides, so CY2027 has no headroom on that check.
 
@@ -123,7 +123,7 @@ CY2024 is still in the platform's support window, but there is no image for it:
 
 ## All Years
 
-- **CPU baseline:** amd64 code compiles for generic x86-64. OIIO's SIMD is SSE2 for CY2025 and CY2026, and SSE4.2 for CY2027. arm64 code compiles for ARMv8-A, and OIIO uses NEON.
+- **CPU baseline:** amd64 code compiles for generic x86-64 (x86-64-v1) in CY2025 and CY2026, and for x86-64-v2 in CY2027. OIIO's SIMD follows that baseline: SSE2 for CY2025 and CY2026, SSE4.2 for CY2027. arm64 code compiles for ARMv8-A, and OIIO uses NEON. See [BUILD_ENVIRONMENT.md](BUILD_ENVIRONMENT.md#cpu-baselines).
 - **OCIO on arm64:** the CY2026 and CY2027 builds were found not to enable OCIO's NEON SIMD path, so OCIO runs its scalar code there. CY2025 uses the same build options.
 - **Python packages:** only NumPy is installed. The image has no `pip`.
 
@@ -133,16 +133,16 @@ The unpacked size is the disk space the image takes once pulled: the sum of its 
 
 `docker image inspect` reports a larger `.Size` on Docker Desktop, because its containerd image store adds the compressed layers to the unpacked ones. Use the figures here, not that one.
 
-The image IDs are from local builds made on 2026-11-03 from the signature-verified sources, tagged for testing; the images are not published to a registry, so there are no registry digests. Building with the bake file's own tags or the plain `docker build` gives images with the same layers and config but a different local image ID.
+The image IDs are from local builds made on 2026-11-05 with the pinned BuildKit builder and the locked RPM sets, tagged for testing; the images are not published to a registry, so there are no registry digests. Building with the bake file's own tags or the plain `docker build` gives images with the same layers and config but a different local image ID.
 
 | Image | Platform | Image ID | Unpacked | Compressed |
 | --- | --- | --- | --- | --- |
-| cy2025 | linux/amd64 | `sha256:56a6562e56f8f93814917192fdf28549441a5c47e232de80394a71cff6212c24` | 272 MB | 89 MB |
-| cy2025 | linux/arm64 | `sha256:ecd1ae22c0554085144024454666f21956a95379ae97d5cba2589997afa54ae8` | 262 MB | 82 MB |
-| cy2026 | linux/amd64 | `sha256:8b94c820608aa5d8efac547ed0ebac1a7f1eafc4f56b4785551ecdeed7617303` | 248 MB | 84 MB |
-| cy2026 | linux/arm64 | `sha256:e07ef8b55400546f5344ccda40fd7e649d05c4301935596cb51c98d835fe32b8` | 256 MB | 79 MB |
-| cy2027 | linux/amd64 | `sha256:290d4b3b85296bef183258d337c310374d7d46ab8b89c64f69c6d365e297fdb7` | 316 MB | 107 MB |
-| cy2027 | linux/arm64 | `sha256:111e6bf6eca740fbc22e51d95a9db85653672108446a8849c39a69c9247083b2` | 334 MB | 103 MB |
+| cy2025 | linux/amd64 | `sha256:f071679d308bf31f4b4fdb8a224d94dd13eb0a566292f18459433222bceb64a1` | 272 MB | 89 MB |
+| cy2025 | linux/arm64 | `sha256:8e2b78bb3fdd951763cd33a7288d36eeda577163e90f29104422106472208579` | 262 MB | 82 MB |
+| cy2026 | linux/amd64 | `sha256:6719ce3dea4c8803c3296d09981c48d1f0864d2b88431849394088319617b816` | 248 MB | 84 MB |
+| cy2026 | linux/arm64 | `sha256:732ad1aa3e9646f4680e6d02ecea12b2dc2307cd328e47de04019a09e08a4f01` | 256 MB | 79 MB |
+| cy2027 | linux/amd64 | `sha256:8bbeebdb61868c1b020e58153a33c95b87ec7e56f455689e79d3377e16227287` | 316 MB | 107 MB |
+| cy2027 | linux/arm64 | `sha256:49dd14515c6a61317b4c067a438e69570ef40a2d55b44bfdba59083ab0cb7689` | 334 MB | 103 MB |
 
 The amd64 images were built and checked under emulation on an arm64 host. They have not yet been run on x86-64 hardware.
 
@@ -155,4 +155,4 @@ Each image is its Rocky Linux minimal base plus `/opt/vfx`. Unpacked, the Rocky 
 - **Drop the oldest year when it leaves the window.** The platform supports the current year and the three before it, so CY2025 leaves on 2029-01-01.
 - **Refresh inputs deliberately:** base-image digests, Rocky packages, and security patch releases. Change the lock, rebuild every year that shares the change, rerun the validator, and record the new image IDs and sizes here and in the implementation log.
 
-Last updated: 2026-11-03
+Last updated: 2026-11-05

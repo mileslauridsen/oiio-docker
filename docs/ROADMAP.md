@@ -12,7 +12,7 @@ This is the high-level direction for oiio-docker. Detailed execution belongs in 
 ## Current Direction
 
 - The project playbook is adopted, and Phase 2 is complete: the legacy CY2021 image builds for amd64 with OIIO pinned and passes the runtime checks.
-- Phase 3 is complete: CY2025–CY2027 images built from Rocky Linux replace the CY2021 image, and the CY2021 recipe is retired. Next is [Phase 4](plans/04-locked-inputs-and-ci.md): locked RPMs, reproducibility checks, and hosted CI.
+- Phase 3 is complete: CY2025–CY2027 images built from Rocky Linux replace the CY2021 image, and the CY2021 recipe is retired. [Phase 4](plans/04-locked-inputs-and-ci.md) is in progress: Tasks 1 and 2 are complete, so every source, RPM, base image, and build tool is locked and verified. Next are the image support contract, image checks, reproducibility checks, and hosted CI.
 - Phase 3 does not use ASWF build images. Each year builds from a digest-pinned Rocky Linux base at that year's glibc floor, with Rocky's `gcc-toolset` compiler and checksum-verified upstream sources for the components the platform specifies. Runtime stages contain only what OIIO's tools and Python bindings need.
 - Keep the two-stage build model, the direct OIIO CLI workflow, and Python access.
 - Track further work in the phase plans rather than in a duplicate backlog.

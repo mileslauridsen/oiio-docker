@@ -9,7 +9,7 @@ There is one image per platform year, each built for `linux/amd64` and `linux/ar
 | `algernon_vfx/oiio:cy2026`, `latest` | CY2026 (current) | Rocky Linux 8 (2.28) | gcc 14.2, C++20 | 3.13 / 2.3 | 2.5 / 3.4 / 3.2 | 3.1 |
 | `algernon_vfx/oiio:cy2027` | CY2027 (from 2027-01-01) | Rocky Linux 9 (2.34) | gcc 14.2, C++20 | 3.13 / 2.4 | 2.6 / 3.5 / 3.2 | 3.2 |
 
-Choose the year your DCCs and plugins target. [docs/PLATFORMS.md](docs/PLATFORMS.md) lists each image's exact versions, the components left out, deviations from the platform (including ACES), and the verified image IDs and sizes. Versions, checksums, and signatures are locked in [build/locks/](build/locks/), and every input is verified before it is built ([docs/SOURCE_PROVENANCE.md](docs/SOURCE_PROVENANCE.md)).
+Choose the year your DCCs and plugins target. [docs/PLATFORMS.md](docs/PLATFORMS.md) lists each image's exact versions, the components left out, deviations from the platform (including ACES), and the verified image IDs and sizes. Versions, checksums, and signatures are locked in [build/locks/](build/locks/), and every input is verified before it is built ([docs/SOURCE_PROVENANCE.md](docs/SOURCE_PROVENANCE.md)). The builder installs an exact, verified RPM set from its Rocky minor release ([docs/BUILD_ENVIRONMENT.md](docs/BUILD_ENVIRONMENT.md)).
 
 There is no **CY2024** image. CY2024's OpenImageIO series, 2.5, requires Boost, which these images leave out, and moving it to OpenImageIO 3 would break compatibility with software built against 2.5.
 
@@ -45,6 +45,7 @@ The validator checks the image against its lock. It covers:
 
 - [Platforms](docs/PLATFORMS.md): the supported years, their verified versions, and annual maintenance.
 - [Source provenance](docs/SOURCE_PROVENANCE.md): how each source is verified, the pinned keys, and the lock update procedure.
+- [Build environment](docs/BUILD_ENVIRONMENT.md): the pinned base images, RPM package lock, toolchain, CPU baselines, and pinned BuildKit builder.
 - [Mission](docs/MISSION.md): purpose, architecture, and quality expectations.
 - [Roadmap](docs/ROADMAP.md): phase status and the next planned work.
 - [Git workflow](docs/GIT.md): branches, worktree safety, and signed commits.

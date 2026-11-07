@@ -1,0 +1,17 @@
+# Rocky Linux 8.10 only, never a later minor release. Rocky keeps superseded builds
+# within a minor release; once 8.10 is retired its tree moves from pub to vault.
+[baseos]
+name=Rocky Linux 8.10 - BaseOS
+baseurl=https://dl.rockylinux.org/pub/rocky/8.10/BaseOS/$basearch/os/
+        https://dl.rockylinux.org/vault/rocky/8.10/BaseOS/$basearch/os/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rockyofficial
+enabled=1
+
+[appstream]
+name=Rocky Linux 8.10 - AppStream
+baseurl=https://dl.rockylinux.org/pub/rocky/8.10/AppStream/$basearch/os/
+        https://dl.rockylinux.org/vault/rocky/8.10/AppStream/$basearch/os/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rockyofficial
+enabled=1
