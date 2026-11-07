@@ -28,23 +28,25 @@ Use `linux/amd64` for x86-64. Every image runs as the non-root user `algernon`, 
 - OIIO's command-line tools, including `oiiotool`, `iinfo`, and `maketx`.
 - Python with NumPy and the `OpenImageIO` and `PyOpenColorIO` modules.
 - The libraries those need: OCIO, OpenEXR, Imath, libtiff, libpng, libjpeg-turbo, and zlib, all built from locked, checksum-verified sources.
+- Reading and writing OpenEXR, TIFF, PNG, JPEG, and DPX. [IMAGE_SUPPORT.md](IMAGE_SUPPORT.md) is the support contract.
 
-Each image was checked on `linux/amd64` and `linux/arm64` with `scripts/validate_image.py`, which passed all 35 of its checks. The checks cover:
+Each image was checked on `linux/amd64` and `linux/arm64` with `scripts/validate_image.py`, which passed all 36 of its checks. The checks cover:
 
 - tool, library, and Python versions against the lock;
 - glibc and `libstdc++` symbol versions against the base OS;
+- the runtime image's RPM set against its lock;
 - unresolved libraries and excluded components;
 - EXR, TIFF, PNG, and JPEG round trips, `maketx`, a NumPy read, and NumPy linear algebra;
 - an OCIO ACES2065-1 to ACEScg conversion;
 - the unpacked size against its budget.
 
-Other image formats that OIIO builds in without extra libraries may also work, but they are not checked.
+Each image also passed all of `scripts/smoke_images.py`'s checks of the [image support contract](IMAGE_SUPPORT.md): format round trips against fixed pixel hashes, `maketx`, OCIO conversions, Python I/O, and mounted output. OIIO's other formats are disabled.
 
 ## Components Left Out
 
 These platform components are not shipped, and the images make no compliance claim for them: Qt, PyQt, PySide, Boost, oneTBB, oneMKL, Alembic, FBX, OpenSubdiv, OpenVDB, and Ptex.
 
-OIIO is built without these optional plugins and features: FFmpeg, GIF, HEIF, RAW, OpenJPEG, OpenJPH, WebP, JPEG XL, Ultra HDR, DICOM, Ptex, OpenVDB, OpenCV, FreeType, Qt (`iv`), OpenGL, and the Nuke plugins. OCIO is built without its command-line apps, GPU tests, and OpenFX plugins.
+OIIO is built without these optional plugins and features: FFmpeg, GIF, HEIF, RAW, OpenJPEG, OpenJPH, WebP, JPEG XL, Ultra HDR, DICOM, Ptex, OpenVDB, OpenCV, FreeType, Qt (`iv`), OpenGL, and the Nuke plugins. Its built-in readers and writers for formats outside the support contract are disabled too; [IMAGE_SUPPORT.md](IMAGE_SUPPORT.md#excluded-formats) lists them. OCIO is built without its command-line apps, GPU tests, and OpenFX plugins.
 
 ## CY2025
 
@@ -133,16 +135,16 @@ The unpacked size is the disk space the image takes once pulled: the sum of its 
 
 `docker image inspect` reports a larger `.Size` on Docker Desktop, because its containerd image store adds the compressed layers to the unpacked ones. Use the figures here, not that one.
 
-The image IDs are from local builds made on 2026-11-05 with the pinned BuildKit builder and the locked RPM sets, tagged for testing; the images are not published to a registry, so there are no registry digests. Building with the bake file's own tags or the plain `docker build` gives images with the same layers and config but a different local image ID.
+The image IDs are from local builds made on 2026-11-07 with the pinned BuildKit builder, the locked RPM sets, and OIIO's formats outside the support contract disabled, tagged for testing; the images are not published to a registry, so there are no registry digests. Building with the bake file's own tags or the plain `docker build` gives images with the same layers and config but a different local image ID.
 
 | Image | Platform | Image ID | Unpacked | Compressed |
 | --- | --- | --- | --- | --- |
-| cy2025 | linux/amd64 | `sha256:f071679d308bf31f4b4fdb8a224d94dd13eb0a566292f18459433222bceb64a1` | 272 MB | 89 MB |
-| cy2025 | linux/arm64 | `sha256:8e2b78bb3fdd951763cd33a7288d36eeda577163e90f29104422106472208579` | 262 MB | 82 MB |
-| cy2026 | linux/amd64 | `sha256:6719ce3dea4c8803c3296d09981c48d1f0864d2b88431849394088319617b816` | 248 MB | 84 MB |
-| cy2026 | linux/arm64 | `sha256:732ad1aa3e9646f4680e6d02ecea12b2dc2307cd328e47de04019a09e08a4f01` | 256 MB | 79 MB |
-| cy2027 | linux/amd64 | `sha256:8bbeebdb61868c1b020e58153a33c95b87ec7e56f455689e79d3377e16227287` | 316 MB | 107 MB |
-| cy2027 | linux/arm64 | `sha256:49dd14515c6a61317b4c067a438e69570ef40a2d55b44bfdba59083ab0cb7689` | 334 MB | 103 MB |
+| cy2025 | linux/amd64 | `sha256:b39c4837d7a36e00a18062c917c654a586b1b8467e66514b6103914ae5fa09ce` | 271 MB | 88 MB |
+| cy2025 | linux/arm64 | `sha256:56cdfb428c4e38198dc43a5568b4e53e367ac2ecfb181b2a3349a32e4d0297ef` | 262 MB | 82 MB |
+| cy2026 | linux/amd64 | `sha256:ff6b813275084f4216af912efaa1255c1f93437413d21ff6316e40c76f378d92` | 247 MB | 84 MB |
+| cy2026 | linux/arm64 | `sha256:c548cd9f3b3ce1bb360af58deaca36c3ca9904e8ddd7c40767896e5ebf82acf2` | 255 MB | 79 MB |
+| cy2027 | linux/amd64 | `sha256:970080068cb32a97d9351d8277b4a5fa675cc8fc2f38f4a76327d63048b23e85` | 315 MB | 106 MB |
+| cy2027 | linux/arm64 | `sha256:edcaa93ca7012cd00c3e1bb97efe74256c22c3628faba9ff32e23336c3262b98` | 333 MB | 103 MB |
 
 The amd64 images were built and checked under emulation on an arm64 host. They have not yet been run on x86-64 hardware.
 
@@ -155,4 +157,4 @@ Each image is its Rocky Linux minimal base plus `/opt/vfx`. Unpacked, the Rocky 
 - **Drop the oldest year when it leaves the window.** The platform supports the current year and the three before it, so CY2025 leaves on 2029-01-01.
 - **Refresh inputs deliberately:** base-image digests, Rocky packages, and security patch releases. Change the lock, rebuild every year that shares the change, rerun the validator, and record the new image IDs and sizes here and in the implementation log.
 
-Last updated: 2026-11-05
+Last updated: 2026-11-07

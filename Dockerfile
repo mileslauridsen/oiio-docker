@@ -203,7 +203,8 @@ RUN --network=none if [ -d /src/nanobind ]; then \
         cmake --install build; \
     fi
 
-# Install OpenImageIO with only the tools, Python bindings, and image-format plugins in scope.
+# Install OpenImageIO with only the tools, Python bindings, and the image formats in the support contract
+# (build/image-support.json): OpenEXR, TIFF, PNG, JPEG, and DPX. Every other format plugin is disabled.
 # OIIO 3.2 and later build nanobind bindings; earlier releases use pybind11. An empty USE_SIMD adds no
 # SIMD flags, so the -march baseline alone sets the instruction set.
 RUN --network=none set -eu; \
@@ -219,7 +220,10 @@ RUN --network=none set -eu; \
         -DENABLE_GIF=OFF -DENABLE_Libheif=OFF -DENABLE_LibRaw=OFF -DENABLE_OpenJPEG=OFF -DENABLE_openjph=OFF \
         -DENABLE_OpenVDB=OFF -DENABLE_Ptex=OFF -DENABLE_WebP=OFF -DENABLE_JXL=OFF -DENABLE_libuhdr=OFF \
         -DENABLE_libdeflate=OFF -DENABLE_zstd=OFF -DENABLE_Nuke=OFF -DENABLE_BZip2=OFF -DENABLE_OpenGL=OFF -DENABLE_Qt5=OFF \
-        -DENABLE_Qt6=OFF -DUSE_QT=OFF -DUSE_R3DSDK=OFF && \
+        -DENABLE_Qt6=OFF -DUSE_QT=OFF -DUSE_R3DSDK=OFF \
+        -DENABLE_BMP=OFF -DENABLE_CINEON=OFF -DENABLE_DDS=OFF -DENABLE_FITS=OFF -DENABLE_HDR=OFF -DENABLE_ICO=OFF \
+        -DENABLE_IFF=OFF -DENABLE_NULL=OFF -DENABLE_PNM=OFF -DENABLE_PSD=OFF -DENABLE_RLA=OFF -DENABLE_SGI=OFF \
+        -DENABLE_SOFTIMAGE=OFF -DENABLE_TARGA=OFF -DENABLE_TERM=OFF -DENABLE_ZFILE=OFF && \
     cmake --build build -j${BUILD_JOBS} && \
     cmake --install build
 

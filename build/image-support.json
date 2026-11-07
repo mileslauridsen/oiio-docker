@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "description": "The image support contract checked by scripts/smoke_images.py and documented in docs/IMAGE_SUPPORT.md.",
+  "formats": ["dpx", "jpeg", "openexr", "png", "tiff"],
+  "excluded_formats": [
+    {"format": "bmp", "cmake": "ENABLE_BMP"},
+    {"format": "cineon", "cmake": "ENABLE_CINEON"},
+    {"format": "dds", "cmake": "ENABLE_DDS"},
+    {"format": "dicom", "cmake": "ENABLE_DCMTK"},
+    {"format": "ffmpeg", "cmake": "ENABLE_FFmpeg"},
+    {"format": "fits", "cmake": "ENABLE_FITS"},
+    {"format": "gif", "cmake": "ENABLE_GIF"},
+    {"format": "hdr", "cmake": "ENABLE_HDR"},
+    {"format": "heif", "cmake": "ENABLE_Libheif"},
+    {"format": "ico", "cmake": "ENABLE_ICO"},
+    {"format": "iff", "cmake": "ENABLE_IFF"},
+    {"format": "jpeg2000", "cmake": "ENABLE_OpenJPEG"},
+    {"format": "jpegxl", "cmake": "ENABLE_JXL"},
+    {"format": "null", "cmake": "ENABLE_NULL"},
+    {"format": "openvdb", "cmake": "ENABLE_OpenVDB"},
+    {"format": "pnm", "cmake": "ENABLE_PNM"},
+    {"format": "psd", "cmake": "ENABLE_PSD"},
+    {"format": "ptex", "cmake": "ENABLE_Ptex"},
+    {"format": "r3d", "cmake": "USE_R3DSDK"},
+    {"format": "raw", "cmake": "ENABLE_LibRaw"},
+    {"format": "rla", "cmake": "ENABLE_RLA"},
+    {"format": "sgi", "cmake": "ENABLE_SGI"},
+    {"format": "softimage", "cmake": "ENABLE_SOFTIMAGE"},
+    {"format": "targa", "cmake": "ENABLE_TARGA"},
+    {"format": "term", "cmake": "ENABLE_TERM"},
+    {"format": "webp", "cmake": "ENABLE_WebP"},
+    {"format": "zfile", "cmake": "ENABLE_ZFILE"}
+  ],
+  "fixtures": {
+    "rgba-float.exr": {
+      "channels": 4,
+      "file_sha256": "5b2de8309f78933a4575871f5457c716fd4adf71cb654557c1adc945aa1d6c9d",
+      "format": "float",
+      "height": 43,
+      "pixel_sha1": "70121C65261EC0DC81E4BEB99867C91F0A5EFAE5",
+      "width": 67
+    },
+    "rgba-half.exr": {
+      "channels": 4,
+      "file_sha256": "e6c46673f42d73b6a7a4dc8efaec1ea8eefaf404762e4b4528344e0ef0c84f02",
+      "format": "half",
+      "height": 43,
+      "pixel_sha1": "F29427D038836442D001E26EEB649C5811102F6E",
+      "width": 67
+    },
+    "rgba-uint16.png": {
+      "channels": 4,
+      "file_sha256": "776b20b33c3e1a2706e5be81ecb9622e39d33ecdcfc4bdcd11bedb22d791a944",
+      "format": "uint16",
+      "height": 43,
+      "pixel_sha1": "ABB3B9896555BC243DFC6BB554DDE8801466625A",
+      "width": 67
+    },
+    "rgba-uint8.png": {
+      "channels": 4,
+      "file_sha256": "4f3976b41935957e4f6f29061f79c8be4df853debda15532342f370ee9d21879",
+      "format": "uint8",
+      "height": 43,
+      "pixel_sha1": "E4E71F3C7FFBC686A203A0179DF7387B3D7340B2",
+      "width": 67
+    }
+  },
+  "derived_pixel_sha1": {
+    "rgb-uint10.dpx": "EB8D20FF06B5D7D83140472DF16B98903CAF1A2E"
+  },
+  "lossy_pixel_sha1": {
+    "rgb-q90.jpg": "F7CD1BA45C671951D724118CDAF52937F360888A"
+  },
+  "ocio": {
+    "cy2025": {
+      "builtin_configs": [
+        "cg-config-v1.0.0_aces-v1.3_ocio-v2.1",
+        "cg-config-v2.1.0_aces-v1.3_ocio-v2.3",
+        "cg-config-v2.2.0_aces-v1.3_ocio-v2.4",
+        "studio-config-v1.0.0_aces-v1.3_ocio-v2.1",
+        "studio-config-v2.1.0_aces-v1.3_ocio-v2.3",
+        "studio-config-v2.2.0_aces-v1.3_ocio-v2.4"
+      ],
+      "default_config": "cg-config-v2.2.0_aces-v1.3_ocio-v2.4",
+      "display": "sRGB - Display",
+      "view": "ACES 1.0 - SDR Video",
+      "display_pixel_sha1": {
+        "linux/amd64": "946A83C222BDB2935658DD8986D6652DA06F54FE",
+        "linux/arm64": "FA7F3654E29020ABCF0AAB0BA70B7DFA36AC3868"
+      }
+    },
+    "cy2026": {
+      "builtin_configs": [
+        "cg-config-v1.0.0_aces-v1.3_ocio-v2.1",
+        "cg-config-v2.1.0_aces-v1.3_ocio-v2.3",
+        "cg-config-v2.2.0_aces-v1.3_ocio-v2.4",
+        "cg-config-v4.0.0_aces-v2.0_ocio-v2.5",
+        "studio-config-v1.0.0_aces-v1.3_ocio-v2.1",
+        "studio-config-v2.1.0_aces-v1.3_ocio-v2.3",
+        "studio-config-v2.2.0_aces-v1.3_ocio-v2.4",
+        "studio-config-v4.0.0_aces-v2.0_ocio-v2.5"
+      ],
+      "default_config": "cg-config-v4.0.0_aces-v2.0_ocio-v2.5",
+      "display": "sRGB - Display",
+      "view": "ACES 2.0 - SDR 100 nits (Rec.709)",
+      "display_pixel_sha1": {
+        "linux/amd64": "C4C604CC8080118880EDFB87DABBB0CA9838E78B",
+        "linux/arm64": "059AB8FD3B923310CAE4A30FB500D7D4D8128B22"
+      }
+    },
+    "cy2027": {
+      "builtin_configs": [
+        "cg-config-v1.0.0_aces-v1.3_ocio-v2.1",
+        "cg-config-v2.1.0_aces-v1.3_ocio-v2.3",
+        "cg-config-v2.2.0_aces-v1.3_ocio-v2.4",
+        "cg-config-v4.0.0_aces-v2.0_ocio-v2.5",
+        "cg-config-v5.0.0_aces-v2.1_ocio-v2.6",
+        "studio-config-v1.0.0_aces-v1.3_ocio-v2.1",
+        "studio-config-v2.1.0_aces-v1.3_ocio-v2.3",
+        "studio-config-v2.2.0_aces-v1.3_ocio-v2.4",
+        "studio-config-v4.0.0_aces-v2.0_ocio-v2.5",
+        "studio-config-v5.0.0_aces-v2.1_ocio-v2.6"
+      ],
+      "default_config": "cg-config-v5.0.0_aces-v2.1_ocio-v2.6",
+      "display": "sRGB - Display",
+      "view": "ACES 2.0 - SDR 100 nits (Rec.709)",
+      "display_pixel_sha1": {
+        "linux/amd64": "C4C604CC8080118880EDFB87DABBB0CA9838E78B",
+        "linux/arm64": "059AB8FD3B923310CAE4A30FB500D7D4D8128B22"
+      }
+    }
+  }
+}

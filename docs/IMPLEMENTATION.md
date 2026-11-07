@@ -2,6 +2,41 @@
 
 Record decisions that change project direction, specifications, runtime behavior, tests, validation, dependencies, deployment, or architecture. Link to plans rather than duplicating their details.
 
+## 2026-11-07: Define And Test The Image Support Contract (Phase 4 Task 3)
+
+Request:
+
+- Work on Phase 4 Task 3.
+
+Decision:
+
+- The supported formats are OpenEXR, TIFF, PNG, JPEG, and DPX. Every other OIIO format plugin is disabled: the 16 built-in ones (BMP, Cineon, DDS, FITS, HDR, ICO, IFF, `null`, PNM, PSD, RLA, SGI, Softimage, Targa, `term`, and Zfile) with new `-DENABLE_<FORMAT>=OFF` options, joining the library-backed plugins that were already off. The exclusions are the same in every year.
+- `build/image-support.json` is the machine-readable contract: enabled and excluded plugins with their CMake options, fixture identities, expected pixel hashes, and each year's OCIO built-in configs, default config, default display and view, and display-transform hashes. `validate_lock.py` now checks that it accounts for all 32 plugins in OIIO 3.1 and 3.2, that the Dockerfile disables each excluded one, and that the generator reproduces its fixtures.
+- `scripts/generate_test_images.py` writes four 67×43 RGBA fixtures (8- and 16-bit PNG, half and float uncompressed OpenEXR) with the standard library alone, so their pixel hashes are computed without OIIO. They matched `iinfo --hash` exactly on first use.
+- `scripts/smoke_images.py` runs 33 checks in one container per image, as the calling user, without network access, with the fixtures mounted read-only. It covers the plugin list, a refused excluded format, fixture reads, 11 round trips, a multipart EXR, `maketx`, OCIO configs and conversions, Python reads and writes, and mounted output compared on the host. Lossless round trips must reproduce the source fixture's hash; the 10-bit DPX hash is derived by the generator; the JPEG hash is frozen.
+- 10-bit DPX is checked as RGB. OIIO's DPX reader drops the last alpha sample of a 10-bit RGBA row when the row leaves one sample in its last 32-bit word (widths one more than a multiple of three, such as 1024 and 4096). The raw file holds the correct sample, so the reader is at fault. Reproduced with OIIO 3.1.19.0 and 3.2.2.0, using random 10-bit data at several widths; RGB and single-channel files were unaffected. OIIO PR #5298 fixed a related single-channel case only, and no upstream report was found.
+- OIIO converts 16-bit samples to 10-bit DPX by truncation, not rounding; the derived hash depends on it.
+- The OCIO display transform differs between amd64 and arm64 by one 8-bit code value in one or two pixels, from OCIO's SIMD paths, so its hash is recorded per architecture. CY2026 and CY2027 produce the same hashes with their different default configs. The ACES2065-1 to ACEScg conversion is compared numerically with the AP0-to-AP1 matrix instead.
+- Document the contract in [IMAGE_SUPPORT.md](IMAGE_SUPPORT.md), including the recommended `--user "$(id -u):$(id -g)"` for writing to mounts.
+
+Affected areas:
+
+- The Dockerfile's OIIO configure step, `build/image-support.json`, `scripts/generate_test_images.py`, `scripts/smoke_images.py`, `scripts/validate_lock.py`, IMAGE_SUPPORT.md, PLATFORMS.md, the README, the mission, the Phase 4 plan, the roadmap, and this log.
+
+Validation:
+
+- `validate_lock.py` passes. It rejected a Dockerfile with `-DENABLE_TARGA=OFF` removed and a plugin catalog with an extra entry.
+- Before the Dockerfile change, `smoke_images.py` failed the Task 2 CY2026 arm64 image on the plugin list and the excluded-format check, as expected, and passed the pixel checks.
+- On the rebuilt CY2026 arm64 image, a contract with a wrong JPEG hash failed that check and exited 1, and a contract with a wrong fixture hash stopped before any check.
+- All six images were rebuilt on the pinned builder and pass all 36 `validate_image.py` checks and all 33 `smoke_images.py` checks. Every round trip, `maketx`, and Python hash was identical across years and architectures. ACEScg conversion error was 6.9e-7 (arm64) and 9.1e-7 (amd64).
+- Disabling the plugins shrank each image by 0.8–1.2 MB unpacked. Image IDs and sizes are in PLATFORMS.md.
+- The amd64 images were built and checked under emulation on an arm64 host.
+
+Follow-up:
+
+- Decide whether to report the 10-bit RGBA DPX reader defect upstream.
+- Task 4 is next: image identity, linkage, contents, and license checks.
+
 ## 2026-11-05: Pin The Build Environment (Phase 4 Task 2)
 
 Request:
@@ -35,7 +70,7 @@ Follow-up:
 
 - When Rocky retires 8.10 or 9.8, confirm a cold build installs through the `vault` fallback.
 - Confirm the CPU baselines against the production workers.
-- Task 3 is next: the image support contract and `smoke_images.py`.
+- Task 3 is next: the image support contract and `smoke_images.py`. Done on 2026-11-07.
 
 ## 2026-11-03: Verify Sigstore Bundles Offline
 

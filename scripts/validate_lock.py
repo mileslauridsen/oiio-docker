@@ -28,6 +28,12 @@ SIGNED = {"zlib": "gpg", "libjpeg-turbo": "gpg", "libtiff": "gpg", "cpython": "g
           "imath": "sigstore", "openexr": "sigstore", "opencolorio": "sigstore", "openimageio": "sigstore"}
 # Releases that publish no signed artifact, recorded so the exception stays deliberate.
 UNSIGNED_EXCEPTIONS = {("opencolorio", "2.4.2")}
+# Every format plugin in OIIO 3.1 and 3.2 (src/*.imageio); the support contract enables or excludes each one.
+OIIO_PLUGINS = {
+    "bmp", "cineon", "dds", "dicom", "dpx", "ffmpeg", "fits", "gif", "hdr", "heif", "ico", "iff", "jpeg", "jpeg2000",
+    "jpegxl", "null", "openexr", "openvdb", "png", "pnm", "psd", "ptex", "r3d", "raw", "rla", "sgi", "softimage",
+    "targa", "term", "tiff", "webp", "zfile",
+}
 
 
 def require(condition, message):
@@ -193,6 +199,29 @@ def validate_dockerfile(current_args):
     require(re.search(r"\bdnf\b[^\n]*\b(update|upgrade)\b", text) is None, "the Dockerfile must not run dnf update or upgrade")
     require("verify_rpm_lock.py" in text, "the builder must verify its installed RPM set")
     validate_build_tools(text)
+    validate_image_support(text)
+
+
+def validate_image_support(text):
+    """Check build/image-support.json covers every OIIO plugin, matches the Dockerfile, and matches the fixtures."""
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import generate_test_images
+
+    contract = json.loads((ROOT / "build" / "image-support.json").read_text(encoding="utf-8"))
+    enabled = set(contract["formats"])
+    excluded = {item["format"]: item["cmake"] for item in contract["excluded_formats"]}
+    require(not enabled & set(excluded), "formats both enabled and excluded: %s" % sorted(enabled & set(excluded)))
+    require(enabled | set(excluded) == OIIO_PLUGINS, "the support contract does not cover exactly OIIO's plugins: %s"
+            % sorted(OIIO_PLUGINS ^ (enabled | set(excluded))))
+    for name, option in sorted(excluded.items()):
+        require(re.search(r"-D%s=OFF\b" % re.escape(option), text), "the Dockerfile does not disable %s (-D%s=OFF)"
+                % (name, option))
+    require(set(contract["ocio"]) == set(YEARS), "the support contract's OCIO years differ from the locks")
+    with tempfile.TemporaryDirectory(prefix="oiio-fixtures-") as directory:
+        generated = generate_test_images.generate(pathlib.Path(directory))
+    require(generated == contract["fixtures"], "generated fixtures differ from build/image-support.json")
+    require(generate_test_images.derived_hashes() == contract["derived_pixel_sha1"],
+            "derived pixel hashes differ from build/image-support.json")
 
 
 def rejection(arguments, expected_text, extraction):
@@ -259,6 +288,7 @@ if __name__ == "__main__":
         require(set(targets) == set(YEARS), "docker-bake.hcl targets differ from the locks: %s" % sorted(targets))
         validate_dockerfile(current)
         print("Dockerfile defaults match %s and name no sources" % CURRENT_YEAR)
+        print("Image support contract covers every OIIO plugin and matches the Dockerfile and fixtures")
         validate_rejections()
     except (KeyError, OSError, ValueError, subprocess.CalledProcessError, json.JSONDecodeError) as error:
         print("lock validation failed: %s" % error, file=sys.stderr)

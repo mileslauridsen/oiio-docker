@@ -27,7 +27,9 @@ Replace `cy2026` with `cy2025` or `cy2027` for another year (`cy2026` is also ta
 ## Running image in an interactive bash shell
 ```docker run -it --entrypoint='bash' algernon_vfx/oiio```
 
-Add `:cy2025` or another year's tag to choose a year, and `-v "$PWD:/work" -w /work` to work on images in the current directory.
+Add `:cy2025` or another year's tag to choose a year. To work on images in the current directory, add `-v "$PWD:/work" -w /work`, and `--user "$(id -u):$(id -g)"` so the container can write there as you.
+
+Every image reads and writes OpenEXR, TIFF, PNG, JPEG, and DPX; other formats are disabled. [docs/IMAGE_SUPPORT.md](docs/IMAGE_SUPPORT.md) lists the supported bit depths, `maketx` textures, each year's OCIO configs, Python access, the excluded formats, and known limitations.
 
 ## Validating an image
 ```python3 scripts/validate_image.py --image algernon_vfx/oiio:cy2026 --platform linux/arm64 --year cy2026```
@@ -41,11 +43,18 @@ The validator checks the image against its lock. It covers:
 - an OCIO ACES conversion;
 - the unpacked size against the budget in [build/image-size-budgets.json](build/image-size-budgets.json).
 
+Then check the image support contract:
+
+```python3 scripts/smoke_images.py --image algernon_vfx/oiio:cy2026 --platform linux/arm64 --year cy2026```
+
+It generates test images without OIIO and checks every format round trip, `maketx`, OCIO conversions, Python reads and writes, and mounted output against fixed pixel hashes.
+
 ## Project documentation
 
 - [Platforms](docs/PLATFORMS.md): the supported years, their verified versions, and annual maintenance.
 - [Source provenance](docs/SOURCE_PROVENANCE.md): how each source is verified, the pinned keys, and the lock update procedure.
 - [Build environment](docs/BUILD_ENVIRONMENT.md): the pinned base images, RPM package lock, toolchain, CPU baselines, and pinned BuildKit builder.
+- [Image support](docs/IMAGE_SUPPORT.md): the supported formats and capabilities, how they are checked, the excluded formats, and known limitations.
 - [Mission](docs/MISSION.md): purpose, architecture, and quality expectations.
 - [Roadmap](docs/ROADMAP.md): phase status and the next planned work.
 - [Git workflow](docs/GIT.md): branches, worktree safety, and signed commits.

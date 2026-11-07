@@ -136,16 +136,17 @@ Deliverables:
 
 Steps:
 
-- [ ] 1. Define the capability matrix:
+- [x] 1. Define the capability matrix:
   - image formats and bit depths: OpenEXR half and float (scanline, tiled, multipart), TIFF 8/16/float, PNG 8/16 with alpha, JPEG, and DPX;
   - texture creation with `maketx`;
   - OCIO conversions, including which ACES config each year provides;
   - Python and NumPy pixel access;
   - mounted input and output.
-- [ ] 2. Map each capability to the OIIO plugins and the Rocky or locked libraries that provide it. Disable plugins that are outside the matrix, and record what each year excludes.
-- [ ] 3. Generate redistributable fixtures outside the image with fixed pixel hashes. `iinfo --hash` reports the pixel hash of each decoded image.
-- [ ] 4. Write `smoke_images.py`. It runs the round trips for each format, `maketx`, an OCIO conversion, and a Python read, and fails on any wrong dimensions, channel count, data type, or pixel hash.
-- [ ] 5. Run the matrix on every year and architecture. Publish the contract and link it from the README and the mission.
+- [x] 2. Map each capability to the OIIO plugins and the Rocky or locked libraries that provide it. Disable plugins that are outside the matrix, and record what each year excludes.
+- [x] 3. Generate redistributable fixtures outside the image with fixed pixel hashes. `iinfo --hash` reports the pixel hash of each decoded image.
+- [x] 4. Write `smoke_images.py`. It runs the round trips for each format, `maketx`, an OCIO conversion, and a Python read, and fails on any wrong dimensions, channel count, data type, or pixel hash.
+- [x] 5. Run the matrix on every year and architecture. Publish the contract and link it from the README and the mission.
+  - Decision: the contract lives in `build/image-support.json`, and `validate_lock.py` checks that it accounts for every OIIO plugin and that the Dockerfile disables each excluded one. Fixtures are written by `scripts/generate_test_images.py` with the standard library alone, so their pixel hashes do not depend on OIIO. 10-bit DPX is checked as RGB, because OIIO's reader drops the last alpha sample of some 10-bit RGBA rows.
 
 Completion evidence: every capability in the matrix passes on all years and both architectures. The support documentation lists every exclusion.
 
@@ -242,5 +243,6 @@ Status: in progress.
 
 - Task 1 is complete; see [SOURCE_PROVENANCE.md](../SOURCE_PROVENANCE.md) and the [implementation log](../IMPLEMENTATION.md).
 - Task 2 is complete; see [BUILD_ENVIRONMENT.md](../BUILD_ENVIRONMENT.md). Locked RPMs install from each year's Rocky minor release, with a `vault` fallback that has not yet been exercised.
+- Task 3 is complete; see [IMAGE_SUPPORT.md](../IMAGE_SUPPORT.md). Every year and architecture passes `smoke_images.py`, and OIIO's formats outside the contract are disabled.
 
-Last updated: 2026-11-05
+Last updated: 2026-11-07
