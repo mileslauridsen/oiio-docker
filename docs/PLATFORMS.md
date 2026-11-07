@@ -137,16 +137,16 @@ The unpacked size is the disk space the image takes once pulled: the sum of its 
 
 `docker image inspect` reports a larger `.Size` on Docker Desktop, because its containerd image store adds the compressed layers to the unpacked ones. Use the figures here, not that one.
 
-The image IDs are from local builds made on 2026-11-07 with the pinned BuildKit builder, the locked RPM sets, OIIO's formats outside the support contract disabled, and the shipped license files, tagged for testing; the images are not published to a registry, so there are no registry digests. Building with the bake file's own tags or the plain `docker build` gives images with the same layers and config but a different local image ID.
+The image IDs are from local cold builds made on 2026-11-07 with the pinned BuildKit builder and the reproducible build settings, tagged for testing; the images are not published to a registry, so there are no registry digests. Each was built twice from separate copies of the repository and gave the same image ID both times, with a creation time of 1970-01-01 (see [BUILD_ENVIRONMENT.md](BUILD_ENVIRONMENT.md#reproducible-builds)). Building with the bake file's own tags or the plain `docker build` gives images with the same layers and config but a different local image ID.
 
 | Image | Platform | Image ID | Unpacked | Compressed |
 | --- | --- | --- | --- | --- |
-| cy2025 | linux/amd64 | `sha256:50cd0c4969a7862a469e3c7ec367bad3c7edf7e33b9801516e2056797b43ed81` | 272 MB | 88 MB |
-| cy2025 | linux/arm64 | `sha256:bd655520b263870c15f99f8204f0b6ae16d2b7f8ae4f7e66c28c027f17c147a1` | 262 MB | 82 MB |
-| cy2026 | linux/amd64 | `sha256:603309374543059220bc53529de57f54189e1b1403e5a74208f70fa7609cebfd` | 247 MB | 84 MB |
-| cy2026 | linux/arm64 | `sha256:f9f6cb1b900c92254c7cec50f73e078a0d31d8eec352f922d6a724e7fce5698f` | 255 MB | 79 MB |
-| cy2027 | linux/amd64 | `sha256:8aef83472412d36a6b10799a492f048a70c97e3cdc593f81b03f6ba8d30d8f51` | 315 MB | 106 MB |
-| cy2027 | linux/arm64 | `sha256:222b219d0b10650120db52cb6a9e0ff1f347c8de52ffc589b92e3045584f217b` | 333 MB | 103 MB |
+| cy2025 | linux/amd64 | `sha256:81427a6797d0faf87287098f96ae51431ef3b6a35b7c4a445f49ae35bea10671` | 272 MB | 88 MB |
+| cy2025 | linux/arm64 | `sha256:6632f17cee677f0abe4de942528908fbe8c592552c42a975b073a31d09523e6b` | 262 MB | 82 MB |
+| cy2026 | linux/amd64 | `sha256:ddb5b9a64973f1de07d657be43720fc10c6a0756fd138058d34e7d16300b9268` | 247 MB | 84 MB |
+| cy2026 | linux/arm64 | `sha256:6c6d6a14d4adeb09d47002328c0cdbd08b0bbff54324b1bfcfbd54259bd7a625` | 255 MB | 79 MB |
+| cy2027 | linux/amd64 | `sha256:6c1d831d891b93fe414c6224d281db0b0d866f95e563f1f2ade94326c1abed97` | 316 MB | 106 MB |
+| cy2027 | linux/arm64 | `sha256:1222b0caf4e0d84da8000fcb4cfa4255728f8dfba8491cd77dc72f7aaba2f019` | 333 MB | 103 MB |
 
 The amd64 images were built and checked under emulation on an arm64 host. They have not yet been run on x86-64 hardware.
 

@@ -138,7 +138,9 @@ def validate_year(year, helper, targets, key_cache):
     runtime = "%s@%s" % (toolchain["runtime_image"]["reference"], toolchain["runtime_image"]["index_digest"])
     expected_args = {"PLATFORM_YEAR": year, "BUILDER_IMAGE": builder, "RUNTIME_IMAGE": runtime,
                      "GCC_TOOLSET": toolchain["gcc_toolset"], "AMD64_MARCH": toolchain["cpu_baselines"]["amd64_march"],
-                     "CXX_STANDARD": spec["cxx_standard"], "PYTHON_MAJOR_MINOR": spec["python"]}
+                     "CXX_STANDARD": spec["cxx_standard"], "PYTHON_MAJOR_MINOR": spec["python"],
+                     # Reproducible builds use a fixed build time in every year.
+                     "SOURCE_DATE_EPOCH": "0"}
     target = targets.get(year)
     require(target is not None, "docker-bake.hcl has no %s target" % year)
     for arg, value in expected_args.items():

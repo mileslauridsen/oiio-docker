@@ -2,6 +2,39 @@
 
 Record decisions that change project direction, specifications, runtime behavior, tests, validation, dependencies, deployment, or architecture. Link to plans rather than duplicating their details.
 
+## 2026-11-07: Make Builds Reproducible (Phase 4 Task 5)
+
+Request:
+
+- Work on Phase 4 Task 5.
+
+Decision:
+
+- A first cold pair of CY2026 arm64, before any change, differed in one shipped binary and 2,841 filesystem entries. The binary was `libpython3.13.so.1.0`, whose build date and time come from `__DATE__` and `__TIME__`. The entries were 944 timestamp-based `.pyc` files, the modification times of every file under `/opt/vfx`, `/opt`, `/etc/passwd`, `/etc/group`, and `/home/algernon`. The image's creation time differed too.
+- `SOURCE_DATE_EPOCH=0` is a global Dockerfile argument, exported in the builder stage with `LC_ALL=C`, `LANG=C`, and `TZ=UTC`, and passed by `docker-bake.hcl`, because BuildKit only uses it for the image's creation time when it is passed explicitly. `validate_lock.py` requires the value in both files. Sources already built under fixed `/src/<name>` paths.
+- The cleanup step deletes every `__pycache__` and recompiles with `python3 -B -m compileall -f --invalidation-mode checked-hash`. Without `-B` and `-f`, 41 `.pyc` files still differed: the modules `compileall` itself imports, which the interpreter had already written timestamp-based. The separate removal of `.opt-1` and `.opt-2` files is gone, since nothing writes them now.
+- The cleanup step sets every path under `/opt/vfx` to `SOURCE_DATE_EPOCH`. The runtime stage replaces `COPY` and the user setup with one `RUN` that copies `/opt/vfx` through a bind mount, adds the `algernon` user, and resets the times of `/opt`, `/etc`, `/etc/passwd`, `/etc/group`, `/home`, and `/home/algernon`. A `COPY` had left `/opt` with the build time.
+- Under amd64 emulation, Rosetta wrote an empty `/root/.cache/rosetta` into the runtime layer, giving `/root` and `/root/.cache` the build time, so the amd64 pairs differed in that layer even though their binaries matched. That step now runs with `HOME` on a tmpfs, where Rosetta's cache stays out of the image, and `reproducible_build.py` no longer excludes that path. The image no longer has that path, which a native amd64 build would not create.
+- `scripts/reproducible_build.py` copies the repository into two new directories, checks that the copies match, and builds each with `--no-cache --pull` on the pinned builder. It compares the hashes of every ELF file under `/opt/vfx` and every system library they load, then the whole `docker export` filesystem with content, mode, owner, and times. It skips only the paths Docker creates in every container and `/etc`'s own time, which `docker export` changes. It reports layer diff IDs, the config digest, and the image ID separately, and exits 1 if the binaries or the filesystem differ. [BUILD_ENVIRONMENT.md](BUILD_ENVIRONMENT.md#reproducible-builds) describes it.
+
+Affected areas:
+
+- The Dockerfile, `docker-bake.hcl`, `scripts/reproducible_build.py`, `scripts/validate_lock.py`, BUILD_ENVIRONMENT.md, PLATFORMS.md, the README, the mission, the Phase 4 plan, the roadmap, and this log.
+
+Validation:
+
+- `validate_lock.py` passes.
+- Cold pairs for all six images, each built twice from separate copies on the pinned builder, match on every comparison: shipped binaries (134–138 per image), the full filesystem (6,909–10,321 entries), layer diff IDs, config digest, and image ID. Every image reports a creation time of 1970-01-01. Image IDs are in PLATFORMS.md.
+- Build A of each pair passes all 48 `validate_image.py` checks and all 33 `smoke_images.py` checks.
+- In the CY2026 arm64 image, all 947 `.pyc` files are checked-hash, `sys.version` reports `Jan  1 1970, 00:00:00`, and libjpeg-turbo reports build `19700101`.
+- A cold build takes about 4 minutes on arm64 and 13 minutes for amd64 under emulation, on an Apple silicon host.
+- The amd64 images were built and checked under emulation on an arm64 host.
+
+Follow-up:
+
+- `/opt/vfx/bin` ships libpng's `libpng-config` and `libpng16-config`. They describe headers the image no longer has, and the build-config check did not catch them because it looks for pkg-config and CMake files.
+- Task 6 is next: GitHub Actions CI. It will show whether a native amd64 build gives the same image IDs as the emulated ones.
+
 ## 2026-11-07: Validate Image Identity, Linkage, And Contents (Phase 4 Task 4)
 
 Request:

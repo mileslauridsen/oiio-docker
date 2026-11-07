@@ -17,6 +17,7 @@ target "cy2025" {
     AMD64_MARCH        = "x86-64"
     CXX_STANDARD       = "17"
     PYTHON_MAJOR_MINOR = "3.11"
+    SOURCE_DATE_EPOCH  = "0"
   }
   tags      = ["algernon_vfx/oiio:cy2025"]
   platforms = ["linux/amd64", "linux/arm64"]
@@ -33,6 +34,7 @@ target "cy2026" {
     AMD64_MARCH        = "x86-64"
     CXX_STANDARD       = "20"
     PYTHON_MAJOR_MINOR = "3.13"
+    SOURCE_DATE_EPOCH  = "0"
   }
   tags      = ["algernon_vfx/oiio:cy2026", "algernon_vfx/oiio:latest"]
   platforms = ["linux/amd64", "linux/arm64"]
@@ -49,6 +51,7 @@ target "cy2027" {
     AMD64_MARCH        = "x86-64-v2"
     CXX_STANDARD       = "20"
     PYTHON_MAJOR_MINOR = "3.13"
+    SOURCE_DATE_EPOCH  = "0"
   }
   tags      = ["algernon_vfx/oiio:cy2027"]
   platforms = ["linux/amd64", "linux/arm64"]

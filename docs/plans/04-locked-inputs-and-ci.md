@@ -180,16 +180,20 @@ Deliverables:
 
 Steps:
 
-- [ ] 1. Set `SOURCE_DATE_EPOCH=0`, the `C` locale, and UTC for builds. Use fixed source paths.
-- [ ] 2. Make Python bytecode deterministic for CPython's standard library and for NumPy.
+- [x] 1. Set `SOURCE_DATE_EPOCH=0`, the `C` locale, and UTC for builds. Use fixed source paths.
+  - BuildKit uses `SOURCE_DATE_EPOCH` for the image's creation time only when the build argument is passed explicitly, so `docker-bake.hcl` passes it too.
+- [x] 2. Make Python bytecode deterministic for CPython's standard library and for NumPy.
   - Compile `.pyc` files with checked-hash invalidation, or leave them out, rather than relying on timestamps.
   - This source of differences does not exist in ffmpeg-docker.
-- [ ] 3. Normalize file modification times on the runtime artifacts and their parent directories. Account for container paths that ffmpeg-docker found Docker Desktop injects, such as `/root/.cache/rosetta`, and for the `/etc` timestamp that `docker export` changes.
-- [ ] 4. Build each year and architecture twice in isolated work directories without cache. Then:
+  - Finding: recompiling with checked-hash alone left 41 `.pyc` files different, for the modules `compileall` itself imports, which the interpreter had already written timestamp-based. `python3 -B -m compileall -f` fixes this.
+- [x] 3. Normalize file modification times on the runtime artifacts and their parent directories. Account for container paths that ffmpeg-docker found Docker Desktop injects, such as `/root/.cache/rosetta`, and for the `/etc` timestamp that `docker export` changes.
+  - Finding: a `COPY` of `/opt/vfx` left `/opt` with the build time, so the runtime stage copies through a bind mount and resets the times in the same step.
+  - Finding: under amd64 emulation, Rosetta wrote an empty `/root/.cache/rosetta` into the runtime layer, with the build time on `/root` and `/root/.cache`. The step now runs with `HOME` on a tmpfs, so the image no longer has that path and the comparison does not exclude it.
+- [x] 4. Build each year and architecture twice in isolated work directories without cache. Then:
   - compare the hashes of shipped executables, shared libraries, and Python extensions;
   - compare the root filesystem's contents and metadata;
   - report config and manifest digests separately.
-- [ ] 5. Resolve differences until the shipped-binary hashes match. Report image-digest equality as a separate result.
+- [x] 5. Resolve differences until the shipped-binary hashes match. Report image-digest equality as a separate result.
 
 Completion evidence: local cold pairs match on shipped binaries for every year and architecture, with filesystem and digest results recorded separately.
 
@@ -247,5 +251,6 @@ Status: in progress.
 - Task 2 is complete; see [BUILD_ENVIRONMENT.md](../BUILD_ENVIRONMENT.md). Locked RPMs install from each year's Rocky minor release, with a `vault` fallback that has not yet been exercised.
 - Task 3 is complete; see [IMAGE_SUPPORT.md](../IMAGE_SUPPORT.md). Every year and architecture passes `smoke_images.py`, and OIIO's formats outside the contract are disabled.
 - Task 4 is complete. `validate_image.py` runs 48 checks, including contents, stripping, and the shipped license files ([SOURCE_PROVENANCE.md](../SOURCE_PROVENANCE.md#shipped-licenses)), and fails on a version mismatch, a missing library, a leftover compiler, and a size overrun.
+- Task 5 is complete; see [BUILD_ENVIRONMENT.md](../BUILD_ENVIRONMENT.md#reproducible-builds). Local cold pairs for all six images match on shipped binaries, the full filesystem, layers, config digest, and image ID. The amd64 pairs ran under emulation.
 
 Last updated: 2026-11-07

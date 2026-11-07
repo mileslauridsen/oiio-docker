@@ -10,6 +10,9 @@ ARG AMD64_MARCH=x86-64
 ARG CXX_STANDARD=20
 ARG PYTHON_MAJOR_MINOR=3.13
 ARG BUILD_JOBS=8
+# Fixed build time for reproducible builds: compilers and CMake use it for embedded dates, Python for bytecode,
+# and BuildKit for the image's creation time. docker-bake.hcl passes it explicitly.
+ARG SOURCE_DATE_EPOCH=0
 
 FROM ${BUILDER_IMAGE} AS builder
 
@@ -17,7 +20,8 @@ ARG PLATFORM_YEAR
 ARG GCC_TOOLSET
 ARG AMD64_MARCH
 ARG TARGETARCH
-ENV LC_ALL=C LANG=C TZ=UTC
+ARG SOURCE_DATE_EPOCH
+ENV LC_ALL=C LANG=C TZ=UTC SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH}
 
 # Install the year's exact RPM closure from its pinned Rocky minor release, and fail if the
 # installed set differs from the lock. build/rpm/<year> holds the repo file and package lists.
@@ -238,16 +242,21 @@ RUN --network=none \
     python3 /build/collect_licenses.py --lockfile /build/lock.json --platform "$TARGETPLATFORM" --source-dir /src \
         --site-packages /opt/vfx/lib/python${PYTHON_MAJOR_MINOR}/site-packages --output-dir /opt/vfx/share/licenses
 
-# Keep only runtime files in /opt/vfx and drop -O/-OO bytecode. Then strip shipped ELF files outside the NumPy
-# wheel, keeping each one's symbols in /opt/vfx-debug, which stays in this stage. The builds have no -g, so
-# those copies hold symbol tables only.
+# Keep only runtime files in /opt/vfx. Recompile all Python bytecode, CPython's and NumPy's alike, at the default
+# optimization level only and with checked-hash invalidation, so no .pyc depends on a file time. -B stops the
+# interpreter writing timestamp-based bytecode for the modules compileall itself imports, -f recompiles those, and
+# the exclusions are the stdlib files that CPython's own install also leaves uncompiled. Then strip shipped ELF
+# files outside the NumPy wheel, keeping each one's symbols in /opt/vfx-debug, which stays in this stage. The
+# builds have no -g, so those copies hold symbol tables only. Finally set every file time to SOURCE_DATE_EPOCH.
 RUN --network=none set -eu -o pipefail; \
     cd /opt/vfx; \
     rm -rf include share/man share/doc lib/pkgconfig lib/cmake lib/libpng lib/*.a; \
     rm -rf lib/python${PYTHON_MAJOR_MINOR}/test lib/python${PYTHON_MAJOR_MINOR}/idlelib \
         lib/python${PYTHON_MAJOR_MINOR}/tkinter lib/python${PYTHON_MAJOR_MINOR}/turtledemo \
         lib/python${PYTHON_MAJOR_MINOR}/ensurepip bin/idle3* bin/pydoc3* bin/python*-config; \
-    find /opt/vfx -name '*.opt-[12].pyc' -delete; \
+    find /opt/vfx -name __pycache__ -type d -prune -exec rm -rf {} +; \
+    python3 -B -m compileall -q -f --invalidation-mode checked-hash -x 'bad_coding|badsyntax|lib2to3/tests/data' \
+        /opt/vfx/lib/python${PYTHON_MAJOR_MINOR}; \
     stripped=0; \
     for f in $(find /opt/vfx -type f -not -path '*/site-packages/numpy*'); do \
         if [ "$(head -c 4 "$f" | od -An -tx1 | tr -d ' ')" = 7f454c46 ]; then \
@@ -258,19 +267,28 @@ RUN --network=none set -eu -o pipefail; \
         fi; \
     done; \
     echo "stripped $stripped ELF files"; \
-    test "$stripped" -gt 50
+    test "$stripped" -gt 50; \
+    find /opt/vfx -depth -exec touch -h -d "@${SOURCE_DATE_EPOCH}" {} +
 
 FROM ${RUNTIME_IMAGE} AS runtime-image
 
-COPY --from=compile /opt/vfx /opt/vfx
+ARG SOURCE_DATE_EPOCH
 
-ENV PATH=/opt/vfx/bin:$PATH LANG=C.UTF-8
-
-# The minimal base has no useradd, so create the non-root user directly.
-RUN echo 'algernon:x:1000:1000::/home/algernon:/bin/bash' >> /etc/passwd && \
+# One layer: copy /opt/vfx with its fixed file times, and create the non-root user directly, since the minimal
+# base has no useradd. Then reset the times of the existing paths this changed, including /opt, which a COPY
+# would otherwise leave with the build time in its own layer. HOME points at a tmpfs for this step because Rosetta,
+# when Docker Desktop emulates amd64, writes its cache under $HOME/.cache and would add /root/.cache to the layer.
+ENV HOME=/run/build-home
+RUN --mount=type=bind,from=compile,source=/opt/vfx,target=/mnt/vfx \
+    --mount=type=tmpfs,target=/run/build-home \
+    cp -a /mnt/vfx /opt/vfx && \
+    echo 'algernon:x:1000:1000::/home/algernon:/bin/bash' >> /etc/passwd && \
     echo 'algernon:x:1000:' >> /etc/group && \
     mkdir -p /home/algernon && \
-    chown 1000:1000 /home/algernon
+    chown 1000:1000 /home/algernon && \
+    touch -h -d "@${SOURCE_DATE_EPOCH}" /opt /etc /etc/passwd /etc/group /home/algernon /home
+
+ENV PATH=/opt/vfx/bin:$PATH LANG=C.UTF-8
 USER algernon
 ENV HOME=/home/algernon
 WORKDIR /home/algernon

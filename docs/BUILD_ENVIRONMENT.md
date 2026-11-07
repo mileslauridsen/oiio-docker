@@ -100,6 +100,29 @@ docker buildx bake --builder oiio-pinned --set '*.platform=linux/arm64' --load c
 
 Build one year at a time: three years in parallel on an 8 GB Docker VM ran out of memory.
 
+## Reproducible Builds
+
+Two builds of the same year and architecture from the same inputs produce the same image, down to the image ID. The Dockerfile makes them so:
+
+- **Fixed build time:** `SOURCE_DATE_EPOCH=0` is set in every build step, and `docker-bake.hcl` also passes it to BuildKit. Compilers use it for `__DATE__` and `__TIME__`, CMake for `string(TIMESTAMP)`, and BuildKit for the image's creation time and history. So `sys.version` reports CPython's build date as `Jan  1 1970, 00:00:00`, libjpeg-turbo reports build `19700101`, and `docker image inspect` shows the image as created on 1970-01-01. `validate_lock.py` requires the value in both files.
+- **Locale, time zone, and paths:** the builder runs with `LC_ALL=C`, `LANG=C`, and `TZ=UTC`. Every source builds under its fixed `/src/<name>` path.
+- **Python bytecode:** the last compile step deletes every `__pycache__` and recompiles CPython's standard library, NumPy, and the other Python files with `compileall --invalidation-mode checked-hash`. A checked-hash `.pyc` records its source's hash instead of its modification time. `-B` keeps the interpreter from writing timestamp-based bytecode for the modules `compileall` itself imports, and `-f` recompiles those.
+- **File times:** every path under `/opt/vfx` is set to `SOURCE_DATE_EPOCH`. The runtime stage copies `/opt/vfx` through a bind mount in the same step that creates the `algernon` user, then resets the times of what that step changed: `/opt`, `/etc`, `/etc/passwd`, `/etc/group`, `/home`, and `/home/algernon`. A `COPY` would have left `/opt` with the build time in its own layer. That step runs with `HOME` on a tmpfs, because Rosetta, when Docker Desktop emulates amd64, writes its cache under `$HOME/.cache` and would otherwise add `/root/.cache` to the layer with the build time.
+
+`scripts/reproducible_build.py` checks this. It copies the repository into two new directories, builds the year from each with `--no-cache --pull` on the pinned builder, and compares:
+
+- the SHA-256 of every ELF file under `/opt/vfx` (executables, shared libraries, Python extensions) and of every system library they load;
+- the whole root filesystem from `docker export`: each file's content, mode, owner, and modification time, and each directory and link. It skips the paths Docker creates in every container and `/etc`'s own time, which `docker export` changes;
+- separately, the layer diff IDs, the config digest, and the local image ID.
+
+It exits non-zero if the binaries or the filesystem differ, and reports the image identity either way:
+
+```sh
+python3 scripts/reproducible_build.py --year cy2026 --platform linux/arm64 --work-dir /path/to/new-directory --metadata repro.json
+```
+
+On an Apple silicon host, a pair of cold builds and its comparison take about 10 minutes on arm64 and about 30 minutes for amd64 under emulation. `--baseline-image` reuses an earlier cold build as the first of the pair.
+
 ## Validation
 
 Check the locks, package lists, CPU baselines, and build tools without building:

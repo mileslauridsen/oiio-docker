@@ -51,6 +51,8 @@ Then check the image support contract:
 
 It generates test images without OIIO and checks every format round trip, `maketx`, OCIO conversions, Python reads and writes, and mounted output against fixed pixel hashes.
 
+Builds are reproducible: two cold builds of a year produce the same image. `scripts/reproducible_build.py` checks this ([docs/BUILD_ENVIRONMENT.md](docs/BUILD_ENVIRONMENT.md#reproducible-builds)).
+
 ## Project documentation
 
 - [Platforms](docs/PLATFORMS.md): the supported years, their verified versions, and annual maintenance.
