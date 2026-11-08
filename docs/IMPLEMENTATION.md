@@ -2,6 +2,35 @@
 
 Record decisions that change project direction, specifications, runtime behavior, tests, validation, dependencies, deployment, or architecture. Link to plans rather than duplicating their details.
 
+## 2026-11-08: Confirm The Hosted Image Jobs And Drop The CI Cache (Phase 4 Task 6)
+
+Request:
+
+- Push `master` and the Phase 4 branch, and open a pull request.
+- Drop the CI cache after it was found never to activate.
+
+Decision:
+
+- `master` was pushed as a fast-forward from `1db201d` to `24ece62`, adding the Phase 2–3 commits; nothing ran, since the workflow was not yet on `master`. `maintenance/locked-inputs-and-ci` was pushed and opened as pull request #2.
+- The `type=gha` cache never activated. The job logs show no cache import or export, and the repository's cache held only Buildx's downloaded binary. Buildx skips a `type=gha` cache without a warning unless the job's cache token (`ACTIONS_RUNTIME_TOKEN`) is in its environment, which Docker's build actions provide and a `run:` step does not. ffmpeg-docker's workflow uses the same pattern, so its cache has likely never been used either.
+- The user chose to drop the cache rather than add `docker/bake-action` or export the token to later steps. Every image job builds cold from the locked inputs, which also checks that every source is still downloadable on every run.
+- Timeouts come from the measured durations: 60 minutes for an image job and 120 for a cold-reproducibility job, which builds twice.
+
+Affected areas:
+
+- The workflow, BUILD_ENVIRONMENT.md, PLATFORMS.md, the Phase 4 plan, the roadmap, and this log.
+
+Validation:
+
+- Hosted run [42443815901](https://github.com/mileslauridsen/oiio-docker/actions/runs/42443815901) passed. The lock check took 4 seconds. The six image jobs, each a cold build plus both checks, took 11m 47s (CY2025 arm64), 12m 42s (CY2027 amd64), 12m 53s (CY2025 amd64), 13m 45s (CY2026 arm64), 14m 42s (CY2027 arm64), and 20m 37s (CY2026 amd64).
+- Every image job's artifact shows no validation or smoke failures, and its `SHA256SUMS` matches its files.
+- All six config digests from the hosted builds match the local cold builds in PLATFORMS.md. The native amd64 builds give the same images as the emulated ones. On the runners, the image ID is the config digest, as Docker's classic image store makes it.
+- After dropping the cache, `actionlint` and `validate_lock.py` pass.
+
+Follow-up:
+
+- Merge pull request #2, then run the cold-reproducibility job manually and record it.
+
 ## 2026-11-07: Add The GitHub Actions Workflow (Phase 4 Task 6, Local Part)
 
 Request:

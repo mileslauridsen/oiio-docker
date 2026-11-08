@@ -37,15 +37,13 @@ jobs:
           - arch: arm64
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 120
+    timeout-minutes: 60
     env:
       YEAR: ${{ matrix.year }}
       ARCH: ${{ matrix.arch }}
       PLATFORM: linux/${{ matrix.arch }}
       BUILDER: oiio-pinned-${{ matrix.arch }}
       IMAGE: algernon_vfx/oiio:ci-${{ matrix.year }}-${{ matrix.arch }}
-      CACHE_SCOPE: oiio-${{ matrix.year }}-${{ matrix.arch }}-${{ github.head_ref || github.ref_name }}
-      MASTER_CACHE_SCOPE: oiio-${{ matrix.year }}-${{ matrix.arch }}-master
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -55,7 +53,7 @@ jobs:
           name: oiio-pinned-${{ matrix.arch }}
           version: v0.38.1
           driver-opts: image=moby/buildkit:v0.33.1@sha256:cec9f139f45e93c5c69c60f8b07cfad9f43f4ef6b6a6cd917527fea5ff2e3dea
-      - name: Build image with GitHub Actions cache
+      - name: Build image from the locked inputs
         id: build
         run: |
           mkdir -p artifacts
@@ -66,9 +64,6 @@ jobs:
             --load \
             --set "*.platform=$PLATFORM" \
             --set "$YEAR.tags=$IMAGE" \
-            --set "$YEAR.cache-from=type=gha,scope=$CACHE_SCOPE" \
-            --set "$YEAR.cache-from=type=gha,scope=$MASTER_CACHE_SCOPE" \
-            --set "$YEAR.cache-to=type=gha,scope=$CACHE_SCOPE,mode=max" \
             --metadata-file "artifacts/buildx-$YEAR-$ARCH.json" \
             "$YEAR"
       - name: Validate image identity, linkage, contents, licenses, and size
@@ -117,7 +112,7 @@ jobs:
           - arch: arm64
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 240
+    timeout-minutes: 120
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

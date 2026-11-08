@@ -210,7 +210,7 @@ Steps:
 - [x] 2. Add an `image-validation` job: a matrix of `cy2025`–`cy2027` × `linux/amd64` (`ubuntu-24.04`) and `linux/arm64` (`ubuntu-24.04-arm`), with `fail-fast: false`.
   - It uses the pinned Buildx and BuildKit, and a GitHub Actions cache scoped to each year, architecture, and branch.
   - It runs `validate_image.py` and `smoke_images.py`.
-  - A pull request also reads `master`'s cache scope, so its first run is not cold.
+  - Finding: the cache never activated. Buildx skips a `type=gha` cache without a warning unless the job's cache token is in its environment, and a `run:` step does not get it. The user chose to drop the cache, so every image job builds cold.
 - [x] 3. Add a `cold-reproducibility` job that runs on the weekly schedule and on manual runs, covering the same matrix with `reproducible_build.py`.
 - [x] 4. Trigger on pull requests, on pushes to `master`, on a weekly schedule, and on manual runs. Grant `contents: read` permissions only. Pin each action by full commit SHA, matching ffmpeg-docker unless a newer reviewed version is needed:
   - `actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1` (v7.0.1);
@@ -219,9 +219,10 @@ Steps:
   - Record these in the toolchain locks.
   - They are recorded in `build/docker-build-tools.json`, which holds the build tools every year shares, with Buildx `v0.38.1` (the locally observed version) and the runners. `validate_lock.py` checks the workflow against it.
 - [x] 5. Upload the following as per-job artifacts: the lock files, Buildx metadata, validation and smoke-test results, artifact hashes, and image sizes.
-- [ ] 6. Measure job durations and cache use. Adjust cache scope or mode, or set timeouts, from evidence.
-  - Local estimate: the CY2026 arm64 `mode=max` cache is about 950 MB, so the six images need about 6 GB of the 10 GB limit for each branch. Timeouts start at ffmpeg-docker's lengths for the cold job (240 minutes) and at 120 minutes for an image job. Hosted durations and cache use remain to be measured.
+- [x] 6. Measure job durations and cache use. Adjust cache scope or mode, or set timeouts, from evidence.
+  - The first hosted run took 12–21 minutes per cold image job and 4 seconds for the lock check. Image jobs now time out after 60 minutes and cold-reproducibility jobs after 120. With no layer cache, the repository's cache holds only Buildx's downloaded binary.
 - [ ] 7. After the user pushes the branch, confirm a hosted run passes. Separately, confirm a manual run of the cold-reproducibility job.
+  - The pull request's hosted run passed: run [42443815901](https://github.com/mileslauridsen/oiio-docker/actions/runs/42443815901). The manual cold-reproducibility run remains.
 
 Completion evidence: a recorded hosted run in which all six image jobs pass, and a recorded manual cold-reproducibility run. CI fails on an invalid checksum, a version mismatch, a missing capability, a glibc limit violation, and a size overrun.
 
@@ -255,6 +256,6 @@ Status: in progress.
 - Task 3 is complete; see [IMAGE_SUPPORT.md](../IMAGE_SUPPORT.md). Every year and architecture passes `smoke_images.py`, and OIIO's formats outside the contract are disabled.
 - Task 4 is complete. `validate_image.py` runs 48 checks, including contents, stripping, and the shipped license files ([SOURCE_PROVENANCE.md](../SOURCE_PROVENANCE.md#shipped-licenses)), and fails on a version mismatch, a missing library, a leftover compiler, and a size overrun.
 - Task 5 is complete; see [BUILD_ENVIRONMENT.md](../BUILD_ENVIRONMENT.md#reproducible-builds). Local cold pairs for all six images match on shipped binaries, the full filesystem, layers, config digest, and image ID. The amd64 pairs ran under emulation.
-- Task 6 is in progress: the workflow is written, linted, and checked by `validate_lock.py`, and its commands pass locally. Measuring hosted durations and cache use, and the hosted runs, wait for the branch to be pushed.
+- Task 6 is in progress: hosted run [42443815901](https://github.com/mileslauridsen/oiio-docker/actions/runs/42443815901) on pull request #2 passed the lock check and all six image jobs, with config digests matching the local builds. The manual cold-reproducibility run waits for the merge.
 
 Last updated: 2026-11-07

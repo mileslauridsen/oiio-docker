@@ -159,7 +159,7 @@ Docker Desktop's containerd image store makes the image ID the manifest digest. 
 | cy2027 | linux/amd64 | `sha256:b6b3b8439b213eb57f19df514eba9e6607f532ee1b862e4724de9abc6bb3e1cd` |
 | cy2027 | linux/arm64 | `sha256:92a4c8f28b1f100a650109ad475daf6459302330075f6066bc2df8bce3575c39` |
 
-The amd64 images were built and checked under emulation on an arm64 host. They have not yet been run on x86-64 hardware.
+The amd64 images were built and checked under emulation on an arm64 host, and again natively on GitHub's x86-64 runners, where all 48 validation and 33 smoke checks passed and every image's config digest matched the table above. They have not yet been run on production workers.
 
 Each image is its Rocky Linux minimal base plus `/opt/vfx`. Unpacked, the Rocky 8.10 minimal base is 104 MB on amd64 and 110 MB on arm64, and the Rocky 9.8 minimal base is 173 MB and 182 MB. That base accounts for almost all of the difference between CY2027 and CY2026. `/opt/vfx` is 140–146 MB in every year (arm64, measured with `du`).
 
