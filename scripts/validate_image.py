@@ -16,8 +16,8 @@ SHT_SYMTAB = 2
 SHT_GNU_VERDEF = 0x6FFFFFFD
 SHT_GNU_VERNEED = 0x6FFFFFFE
 EXCLUDED_LIBRARY_PATTERNS = ("libQt", "libboost", "libtbb", "libopenvdb", "libPtex", "libraw", "libavcodec")
-# NumPy's wheel ships C headers, static helper libraries, and a pkg-config file for building extensions, and
-# its binaries keep their symbol tables. It is installed unchanged, so its package directories are exempt.
+# NumPy's wheel ships C headers, static helper libraries, a pkg-config file, and a numpy-config script for building
+# extensions, and its binaries keep their symbol tables. It is installed unchanged, so its files are exempt.
 NUMPY_PACKAGE = re.compile(r"/site-packages/numpy(\.libs)?/")
 
 # Runs in the image: build tools on the PATH directories, build-stage directories, development files outside
@@ -41,6 +41,10 @@ for top in ("/opt/vfx", "/usr/include", "/usr/local"):
             full = os.path.join(root, name)
             if re.search(r"\.(h|hh|hpp|hxx|inl|a|la|pc|cmake)$", name) and not re.search(NUMPY, full):
                 development.append(full)
+# Build-configuration scripts such as libpng-config, which describe headers the image does not ship.
+if os.path.isdir("/opt/vfx/bin"):
+    development += sorted(os.path.join("/opt/vfx/bin", name) for name in os.listdir("/opt/vfx/bin")
+                          if name.endswith("-config") and name != "numpy-config")
 user = pwd.getpwnam("algernon")
 print(json.dumps({"tools": sorted(set(tools)), "directories": directories, "development": sorted(development),
                   "bash": os.access("/bin/bash", os.X_OK),

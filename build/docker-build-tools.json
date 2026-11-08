@@ -12,5 +12,26 @@
   "observed": {
     "buildx_cli": "0.38.1",
     "docker_engine": "29.9.2"
+  },
+  "github_actions": {
+    "buildx_cli": "v0.38.1",
+    "actions": {
+      "actions/checkout": {
+        "commit": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+        "version": "v7.0.1"
+      },
+      "docker/setup-buildx-action": {
+        "commit": "f87e5991a6d7451dcb8d9637bfbc97413f497069",
+        "version": "v4.4.1"
+      },
+      "actions/upload-artifact": {
+        "commit": "ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "version": "v4.6.2"
+      }
+    },
+    "runners": {
+      "linux/amd64": "ubuntu-24.04",
+      "linux/arm64": "ubuntu-24.04-arm"
+    }
   }
 }

@@ -25,6 +25,7 @@ define tool and format requirements -> update build recipe -> build image -> ver
 - `docker-bake.hcl`: one target per year, with that year's base images, compiler, and C++ standard.
 - `scripts/validate_image.py` and `build/image-size-budgets.json`: check a built image against its lock and size budget: versions, symbol limits, linkage, contents, licenses, and size.
 - `scripts/reproducible_build.py`: builds a year twice from isolated copies without cache and compares the shipped binaries, the root filesystem, and the image identity ([BUILD_ENVIRONMENT.md](BUILD_ENVIRONMENT.md#reproducible-builds)).
+- `.github/workflows/ci.yml`: runs the lock check, builds and checks every year on native amd64 and arm64 runners, and runs the cold reproducibility pairs weekly ([BUILD_ENVIRONMENT.md](BUILD_ENVIRONMENT.md#continuous-integration)).
 - `scripts/collect_licenses.py`: copies the license and notice files of every shipped component into `/opt/vfx/share/licenses` during the build ([SOURCE_PROVENANCE.md](SOURCE_PROVENANCE.md#shipped-licenses)).
 - `build/image-support.json`, `scripts/generate_test_images.py`, and `scripts/smoke_images.py`: the image support contract, its independently generated fixtures, and the checks that run it against a built image ([IMAGE_SUPPORT.md](IMAGE_SUPPORT.md)).
 - `README.md`: the operator entry point, with build and interactive-shell commands and documentation links.

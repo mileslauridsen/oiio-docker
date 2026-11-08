@@ -1,0 +1,151 @@
+name: OIIO build verification
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  schedule:
+    - cron: "41 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lock-validation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Validate locked build inputs and checksum rejection
+        run: python3 scripts/validate_lock.py
+      - name: Check Python syntax
+        run: python3 -m py_compile scripts/*.py build/*.py
+
+  image-validation:
+    if: github.event_name != 'schedule'
+    needs: lock-validation
+    strategy:
+      fail-fast: false
+      matrix:
+        year: [cy2025, cy2026, cy2027]
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    env:
+      YEAR: ${{ matrix.year }}
+      ARCH: ${{ matrix.arch }}
+      PLATFORM: linux/${{ matrix.arch }}
+      BUILDER: oiio-pinned-${{ matrix.arch }}
+      IMAGE: algernon_vfx/oiio:ci-${{ matrix.year }}-${{ matrix.arch }}
+      CACHE_SCOPE: oiio-${{ matrix.year }}-${{ matrix.arch }}-${{ github.head_ref || github.ref_name }}
+      MASTER_CACHE_SCOPE: oiio-${{ matrix.year }}-${{ matrix.arch }}-master
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up pinned Buildx and BuildKit
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          name: oiio-pinned-${{ matrix.arch }}
+          version: v0.38.1
+          driver-opts: image=moby/buildkit:v0.33.1@sha256:cec9f139f45e93c5c69c60f8b07cfad9f43f4ef6b6a6cd917527fea5ff2e3dea
+      - name: Build image with GitHub Actions cache
+        id: build
+        run: |
+          mkdir -p artifacts
+          docker buildx bake \
+            --builder "$BUILDER" \
+            --file docker-bake.hcl \
+            --progress=plain \
+            --load \
+            --set "*.platform=$PLATFORM" \
+            --set "$YEAR.tags=$IMAGE" \
+            --set "$YEAR.cache-from=type=gha,scope=$CACHE_SCOPE" \
+            --set "$YEAR.cache-from=type=gha,scope=$MASTER_CACHE_SCOPE" \
+            --set "$YEAR.cache-to=type=gha,scope=$CACHE_SCOPE,mode=max" \
+            --metadata-file "artifacts/buildx-$YEAR-$ARCH.json" \
+            "$YEAR"
+      - name: Validate image identity, linkage, contents, licenses, and size
+        if: always() && steps.build.outcome == 'success'
+        run: >-
+          python3 scripts/validate_image.py
+          --image "$IMAGE" --platform "$PLATFORM" --year "$YEAR"
+          --metadata "artifacts/validate-$YEAR-$ARCH.json"
+      - name: Check the image support contract
+        if: always() && steps.build.outcome == 'success'
+        run: >-
+          python3 scripts/smoke_images.py
+          --image "$IMAGE" --platform "$PLATFORM" --year "$YEAR"
+          --work-dir "$RUNNER_TEMP/smoke-$YEAR-$ARCH"
+          --metadata "artifacts/smoke-$YEAR-$ARCH.json"
+      - name: Collect locks, image identity, and hashes
+        if: always()
+        run: |
+          mkdir -p artifacts
+          cp "build/locks/$YEAR.json" build/docker-build-tools.json build/image-size-budgets.json artifacts/
+          cp build/rpm/"$YEAR"/*-"$ARCH".packages artifacts/
+          if docker image inspect "$IMAGE" > /dev/null 2>&1; then
+            docker image inspect "$IMAGE" > "artifacts/image-inspect-$YEAR-$ARCH.json"
+            docker history --no-trunc --human=false "$IMAGE" > "artifacts/image-history-$YEAR-$ARCH.txt"
+          fi
+          (cd artifacts && sha256sum -- * > SHA256SUMS)
+      - name: Upload build and check results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: oiio-build-${{ matrix.year }}-${{ matrix.arch }}
+          path: artifacts/
+          if-no-files-found: warn
+
+  cold-reproducibility:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    needs: lock-validation
+    strategy:
+      fail-fast: false
+      matrix:
+        year: [cy2025, cy2026, cy2027]
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 240
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up pinned Buildx and BuildKit
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          name: oiio-pinned-${{ matrix.arch }}
+          version: v0.38.1
+          driver-opts: image=moby/buildkit:v0.33.1@sha256:cec9f139f45e93c5c69c60f8b07cfad9f43f4ef6b6a6cd917527fea5ff2e3dea
+      - name: Build twice without layer cache and compare
+        run: >-
+          python3 scripts/reproducible_build.py
+          --year ${{ matrix.year }}
+          --platform linux/${{ matrix.arch }}
+          --builder oiio-pinned-${{ matrix.arch }}
+          --work-dir "$RUNNER_TEMP/reproducibility"
+          --metadata reproducibility-${{ matrix.year }}-${{ matrix.arch }}.json
+      - name: Collect build logs
+        if: always()
+        run: |
+          mkdir -p reproducibility-logs
+          cp "$RUNNER_TEMP"/reproducibility/build-*.log reproducibility-logs/ 2>/dev/null || true
+      - name: Upload reproducibility report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: oiio-reproducibility-${{ matrix.year }}-${{ matrix.arch }}
+          path: |
+            reproducibility-${{ matrix.year }}-${{ matrix.arch }}.json
+            reproducibility-logs/
+          if-no-files-found: warn

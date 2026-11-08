@@ -253,7 +253,7 @@ RUN --network=none set -eu -o pipefail; \
     rm -rf include share/man share/doc lib/pkgconfig lib/cmake lib/libpng lib/*.a; \
     rm -rf lib/python${PYTHON_MAJOR_MINOR}/test lib/python${PYTHON_MAJOR_MINOR}/idlelib \
         lib/python${PYTHON_MAJOR_MINOR}/tkinter lib/python${PYTHON_MAJOR_MINOR}/turtledemo \
-        lib/python${PYTHON_MAJOR_MINOR}/ensurepip bin/idle3* bin/pydoc3* bin/python*-config; \
+        lib/python${PYTHON_MAJOR_MINOR}/ensurepip bin/idle3* bin/pydoc3* bin/python*-config bin/libpng*-config; \
     find /opt/vfx -name __pycache__ -type d -prune -exec rm -rf {} +; \
     python3 -B -m compileall -q -f --invalidation-mode checked-hash -x 'bad_coding|badsyntax|lib2to3/tests/data' \
         /opt/vfx/lib/python${PYTHON_MAJOR_MINOR}; \

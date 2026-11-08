@@ -206,18 +206,21 @@ Deliverables:
 
 Steps:
 
-- [ ] 1. Add a `lock-validation` job that runs `validate_lock.py` and Python syntax checks on `ubuntu-24.04`.
-- [ ] 2. Add an `image-validation` job: a matrix of `cy2025`–`cy2027` × `linux/amd64` (`ubuntu-24.04`) and `linux/arm64` (`ubuntu-24.04-arm`), with `fail-fast: false`.
+- [x] 1. Add a `lock-validation` job that runs `validate_lock.py` and Python syntax checks on `ubuntu-24.04`.
+- [x] 2. Add an `image-validation` job: a matrix of `cy2025`–`cy2027` × `linux/amd64` (`ubuntu-24.04`) and `linux/arm64` (`ubuntu-24.04-arm`), with `fail-fast: false`.
   - It uses the pinned Buildx and BuildKit, and a GitHub Actions cache scoped to each year, architecture, and branch.
   - It runs `validate_image.py` and `smoke_images.py`.
-- [ ] 3. Add a `cold-reproducibility` job that runs on the weekly schedule and on manual runs, covering the same matrix with `reproducible_build.py`.
-- [ ] 4. Trigger on pull requests, on pushes to `master`, on a weekly schedule, and on manual runs. Grant `contents: read` permissions only. Pin each action by full commit SHA, matching ffmpeg-docker unless a newer reviewed version is needed:
+  - A pull request also reads `master`'s cache scope, so its first run is not cold.
+- [x] 3. Add a `cold-reproducibility` job that runs on the weekly schedule and on manual runs, covering the same matrix with `reproducible_build.py`.
+- [x] 4. Trigger on pull requests, on pushes to `master`, on a weekly schedule, and on manual runs. Grant `contents: read` permissions only. Pin each action by full commit SHA, matching ffmpeg-docker unless a newer reviewed version is needed:
   - `actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1` (v7.0.1);
   - `docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069` (v4.4.1);
   - `actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02` (v4.6.2).
   - Record these in the toolchain locks.
-- [ ] 5. Upload the following as per-job artifacts: the lock files, Buildx metadata, validation and smoke-test results, artifact hashes, and image sizes.
+  - They are recorded in `build/docker-build-tools.json`, which holds the build tools every year shares, with Buildx `v0.38.1` (the locally observed version) and the runners. `validate_lock.py` checks the workflow against it.
+- [x] 5. Upload the following as per-job artifacts: the lock files, Buildx metadata, validation and smoke-test results, artifact hashes, and image sizes.
 - [ ] 6. Measure job durations and cache use. Adjust cache scope or mode, or set timeouts, from evidence.
+  - Local estimate: the CY2026 arm64 `mode=max` cache is about 950 MB, so the six images need about 6 GB of the 10 GB limit for each branch. Timeouts start at ffmpeg-docker's lengths for the cold job (240 minutes) and at 120 minutes for an image job. Hosted durations and cache use remain to be measured.
 - [ ] 7. After the user pushes the branch, confirm a hosted run passes. Separately, confirm a manual run of the cold-reproducibility job.
 
 Completion evidence: a recorded hosted run in which all six image jobs pass, and a recorded manual cold-reproducibility run. CI fails on an invalid checksum, a version mismatch, a missing capability, a glibc limit violation, and a size overrun.
@@ -252,5 +255,6 @@ Status: in progress.
 - Task 3 is complete; see [IMAGE_SUPPORT.md](../IMAGE_SUPPORT.md). Every year and architecture passes `smoke_images.py`, and OIIO's formats outside the contract are disabled.
 - Task 4 is complete. `validate_image.py` runs 48 checks, including contents, stripping, and the shipped license files ([SOURCE_PROVENANCE.md](../SOURCE_PROVENANCE.md#shipped-licenses)), and fails on a version mismatch, a missing library, a leftover compiler, and a size overrun.
 - Task 5 is complete; see [BUILD_ENVIRONMENT.md](../BUILD_ENVIRONMENT.md#reproducible-builds). Local cold pairs for all six images match on shipped binaries, the full filesystem, layers, config digest, and image ID. The amd64 pairs ran under emulation.
+- Task 6 is in progress: the workflow is written, linted, and checked by `validate_lock.py`, and its commands pass locally. Measuring hosted durations and cache use, and the hosted runs, wait for the branch to be pushed.
 
 Last updated: 2026-11-07

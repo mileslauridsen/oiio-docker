@@ -125,10 +125,30 @@ On an Apple silicon host, a pair of cold builds and its comparison take about 10
 
 ## Validation
 
-Check the locks, package lists, CPU baselines, and build tools without building:
+Check the locks, package lists, CPU baselines, build tools, and CI workflow pins without building:
 
 ```sh
 python3 scripts/validate_lock.py
 ```
 
 A build checks its own inputs: the fetch stage verifies every source, and the builder stage verifies its RPM set. After a build, `scripts/validate_image.py` checks the image, including its runtime RPM set.
+
+## Continuous Integration
+
+[`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs these checks on GitHub-hosted runners: `ubuntu-24.04` for amd64 and `ubuntu-24.04-arm` for arm64, so both architectures build natively. It runs on pull requests, on pushes to `master`, every Monday at 07:41 UTC, and on manual runs, with read-only access to the repository.
+
+- **`lock-validation`** runs `validate_lock.py` and compiles every script to check its syntax. The other jobs wait for it.
+- **`image-validation`**, on every run except the weekly one, builds each year on each architecture: six jobs that do not cancel each other when one fails. Each job builds with `docker buildx bake` on the pinned BuildKit, then runs `validate_image.py` and `smoke_images.py`. It uploads an `oiio-build-<year>-<arch>` artifact with the year's lock, the build tools, the size budgets, the architecture's RPM lists, the Buildx metadata, both checks' JSON results, `docker image inspect` and `docker history` output, and a `SHA256SUMS` of those files.
+- **`cold-reproducibility`**, on the weekly and manual runs only, runs `reproducible_build.py` for the same six combinations and uploads its report and both build logs as `oiio-reproducibility-<year>-<arch>`.
+
+Every action is pinned by full commit SHA, and `build/docker-build-tools.json` records those commits, the Buildx version (`v0.38.1`), and the runners. `validate_lock.py` fails if the workflow uses an action, Buildx version, BuildKit image, or runner that file does not record, if its year matrix differs from the locks, or if it asks for more than `contents: read`.
+
+| Action | Version | Commit |
+| --- | --- | --- |
+| `actions/checkout` | v7.0.1 | `3d3c42e5aac5ba805825da76410c181273ba90b1` |
+| `docker/setup-buildx-action` | v4.4.1 | `f87e5991a6d7451dcb8d9637bfbc97413f497069` |
+| `actions/upload-artifact` | v4.6.2 | `ea165f8d65b6e75b540449e92b4886f43607fa02` |
+
+The image jobs use the GitHub Actions cache in `mode=max`, which keeps every build stage. Each year, architecture, and branch has its own cache scope, and a pull request also reads `master`'s. A local export of the CY2026 arm64 cache came to about 950 MB, so the six images need about 6 GB of the repository's 10 GB cache limit for each branch. With `master` and one active pull request, GitHub evicts the least recently used entries, and the evicted images build cold on their next run. Hosted job durations and cache use are not measured yet.
+
+A local image ID depends on Docker's image store: the classic store uses the config digest, and the containerd image store, which Docker Desktop uses here, uses the manifest digest. The config digest is the same in both, so compare a hosted build with a local one by config digest, which [PLATFORMS.md](PLATFORMS.md#verified-images) lists.

@@ -137,16 +137,27 @@ The unpacked size is the disk space the image takes once pulled: the sum of its 
 
 `docker image inspect` reports a larger `.Size` on Docker Desktop, because its containerd image store adds the compressed layers to the unpacked ones. Use the figures here, not that one.
 
-The image IDs are from local cold builds made on 2026-11-07 with the pinned BuildKit builder and the reproducible build settings, tagged for testing; the images are not published to a registry, so there are no registry digests. Each was built twice from separate copies of the repository and gave the same image ID both times, with a creation time of 1970-01-01 (see [BUILD_ENVIRONMENT.md](BUILD_ENVIRONMENT.md#reproducible-builds)). Building with the bake file's own tags or the plain `docker build` gives images with the same layers and config but a different local image ID.
+The image IDs are from local cold builds made on 2026-11-07 with the pinned BuildKit builder, the reproducible build settings, and libpng's configuration scripts removed, tagged for testing; the images are not published to a registry, so there are no registry digests. Each was built twice from separate copies of the repository and gave the same image ID both times, with a creation time of 1970-01-01 (see [BUILD_ENVIRONMENT.md](BUILD_ENVIRONMENT.md#reproducible-builds)). Building with the bake file's own tags or the plain `docker build` gives images with the same layers and config but a different local image ID.
 
 | Image | Platform | Image ID | Unpacked | Compressed |
 | --- | --- | --- | --- | --- |
-| cy2025 | linux/amd64 | `sha256:81427a6797d0faf87287098f96ae51431ef3b6a35b7c4a445f49ae35bea10671` | 272 MB | 88 MB |
-| cy2025 | linux/arm64 | `sha256:6632f17cee677f0abe4de942528908fbe8c592552c42a975b073a31d09523e6b` | 262 MB | 82 MB |
-| cy2026 | linux/amd64 | `sha256:ddb5b9a64973f1de07d657be43720fc10c6a0756fd138058d34e7d16300b9268` | 247 MB | 84 MB |
-| cy2026 | linux/arm64 | `sha256:6c6d6a14d4adeb09d47002328c0cdbd08b0bbff54324b1bfcfbd54259bd7a625` | 255 MB | 79 MB |
-| cy2027 | linux/amd64 | `sha256:6c1d831d891b93fe414c6224d281db0b0d866f95e563f1f2ade94326c1abed97` | 316 MB | 106 MB |
-| cy2027 | linux/arm64 | `sha256:1222b0caf4e0d84da8000fcb4cfa4255728f8dfba8491cd77dc72f7aaba2f019` | 333 MB | 103 MB |
+| cy2025 | linux/amd64 | `sha256:5e15276ec247bd769b735b817d237b1f26f210ab1c70aee5ac87b5a2a3eb3690` | 272 MB | 88 MB |
+| cy2025 | linux/arm64 | `sha256:0622ac20841b22e185b3afb001654f9c5324f84e251e17fa81d6338dd385ed59` | 262 MB | 82 MB |
+| cy2026 | linux/amd64 | `sha256:a7df5bf212fa9dc3c2605f6609aaebd7fa3a3d158ae9138e5050ff816b7bbb28` | 247 MB | 84 MB |
+| cy2026 | linux/arm64 | `sha256:2995d7b07194883b6754b4462c0b963b20de7fee3aeff55460b7cac7a3c97916` | 255 MB | 79 MB |
+| cy2027 | linux/amd64 | `sha256:b803f01013739f059f7fcec0afebbf0dcff1d3bc745f52d15e9366f522b72796` | 315 MB | 106 MB |
+| cy2027 | linux/arm64 | `sha256:88018867602b31b00b12ee280d7bed15a39b4dced1bf79782efc66f17818d3b1` | 333 MB | 103 MB |
+
+Docker Desktop's containerd image store makes the image ID the manifest digest. The config digest below is the same in every image store, so compare builds on other hosts, such as CI, with it:
+
+| Image | Platform | Config digest |
+| --- | --- | --- |
+| cy2025 | linux/amd64 | `sha256:035745cab26e596646841a62b6d21f287f7f0fa1914ceabffb11561db481bfe8` |
+| cy2025 | linux/arm64 | `sha256:f1cb81256b9c43ef81c0a8c6b92abcf18ec57c9055fcea012ac7a59e99f84e30` |
+| cy2026 | linux/amd64 | `sha256:bb0b0992a1061bead222a80270ad5dc41fe3a34f15ef39ef07506d2959173adc` |
+| cy2026 | linux/arm64 | `sha256:86979265486ffb4a9411dd47348c4135bb650a2a3c98b57433005a6323b7a572` |
+| cy2027 | linux/amd64 | `sha256:b6b3b8439b213eb57f19df514eba9e6607f532ee1b862e4724de9abc6bb3e1cd` |
+| cy2027 | linux/arm64 | `sha256:92a4c8f28b1f100a650109ad475daf6459302330075f6066bc2df8bce3575c39` |
 
 The amd64 images were built and checked under emulation on an arm64 host. They have not yet been run on x86-64 hardware.
 

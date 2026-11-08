@@ -193,6 +193,34 @@ def validate_build_tools(text):
             "the Dockerfile frontend differs from build/docker-build-tools.json")
     require(re.match(r"^moby/buildkit:v[\d.]+$", tools["buildkit"]["reference"]) and
             re.match(r"^sha256:[0-9a-f]{64}$", tools["buildkit"]["index_digest"]), "BuildKit must be pinned by digest")
+    validate_workflow(tools)
+
+
+def validate_workflow(tools):
+    """Check the CI workflow pins every action, Buildx, BuildKit, and runner as recorded, and covers every year."""
+    text = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    ci = tools["github_actions"]
+    uses = re.findall(r"^[ \t]*(?:- )?uses:\s*(.*)$", text, re.MULTILINE)
+    for value in uses:
+        match = re.match(r"^([\w.-]+/[\w.-]+)@([0-9a-f]{40}) # (v[\d.]+)$", value)
+        require(match, "workflow action is not pinned by full commit SHA with its version: %s" % value)
+        expected = ci["actions"].get(match.group(1))
+        require(expected == {"commit": match.group(2), "version": match.group(3)},
+                "workflow action %s differs from build/docker-build-tools.json" % value)
+    require({re.match(r"^([^@]+)@", value).group(1) for value in uses} == set(ci["actions"]),
+            "workflow actions differ from build/docker-build-tools.json")
+    buildkit = "image=%s@%s" % (tools["buildkit"]["reference"], tools["buildkit"]["index_digest"])
+    for key, expected in (("version", ci["buildx_cli"]), ("driver-opts", buildkit)):
+        found = re.findall(r"^[ \t]*%s:\s*(\S+)$" % key, text, re.MULTILINE)
+        require(found and set(found) == {expected}, "workflow %s differs from build/docker-build-tools.json" % key)
+    runners = re.findall(r"^[ \t]*runner:\s*(\S+)$", text, re.MULTILINE)
+    require(sorted(set(runners)) == sorted(set(ci["runners"].values())),
+            "workflow runners differ from build/docker-build-tools.json")
+    for years in re.findall(r"^[ \t]*year:\s*\[([^\]]*)\]$", text, re.MULTILINE):
+        require(tuple(year.strip() for year in years.split(",")) == YEARS, "workflow matrix years differ from the locks")
+    require(re.search(r"^[ \t]*year:", text, re.MULTILINE), "workflow has no year matrix")
+    require(re.findall(r"^[ \t]*permissions:.*$", text, re.MULTILINE) == ["permissions:"] and
+            "\npermissions:\n  contents: read\n\n" in text, "workflow must grant only contents: read")
 
 
 def validate_dockerfile(current_args):
@@ -295,6 +323,7 @@ if __name__ == "__main__":
         require(set(targets) == set(YEARS), "docker-bake.hcl targets differ from the locks: %s" % sorted(targets))
         validate_dockerfile(current)
         print("Dockerfile defaults match %s and name no sources" % CURRENT_YEAR)
+        print("CI workflow pins match build/docker-build-tools.json and cover every year")
         print("Image support contract covers every OIIO plugin and matches the Dockerfile and fixtures")
         validate_rejections()
     except (KeyError, OSError, ValueError, subprocess.CalledProcessError, json.JSONDecodeError) as error:

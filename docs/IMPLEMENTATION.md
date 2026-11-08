@@ -2,6 +2,40 @@
 
 Record decisions that change project direction, specifications, runtime behavior, tests, validation, dependencies, deployment, or architecture. Link to plans rather than duplicating their details.
 
+## 2026-11-07: Add The GitHub Actions Workflow (Phase 4 Task 6, Local Part)
+
+Request:
+
+- Commit Task 5, then work on Phase 4 Task 6.
+
+Decision:
+
+- `.github/workflows/ci.yml` follows ffmpeg-docker's workflow, extended to the year-by-architecture matrix. `lock-validation` runs `validate_lock.py` and compiles every script. `image-validation` builds each of the six images natively (`ubuntu-24.04` and `ubuntu-24.04-arm`) with `docker buildx bake` on the pinned BuildKit, runs `validate_image.py` and `smoke_images.py`, and uploads the lock, build tools, size budgets, RPM lists, Buildx metadata, check results, `docker image inspect` and `docker history` output, and a `SHA256SUMS`. `cold-reproducibility` runs `reproducible_build.py` for the same six on the weekly schedule and manual runs. The workflow grants only `contents: read`. [BUILD_ENVIRONMENT.md](BUILD_ENVIRONMENT.md#continuous-integration) describes it.
+- The action pins match ffmpeg-docker's. GitHub's API confirmed each commit is its tag's commit. They are recorded in `build/docker-build-tools.json`, which holds the build tools every year shares, with Buildx `v0.38.1`, the version used locally, in place of ffmpeg-docker's `v0.37.2`. `validate_lock.py` now checks the workflow's actions, Buildx version, BuildKit image, runners, year matrix, and permissions against that file.
+- The GitHub Actions cache is scoped by year, architecture, and branch, in `mode=max`. A pull request also reads `master`'s scope; a local `bake --print` showed that repeated `cache-from` settings combine. A local `mode=max` export of the CY2026 arm64 cache was about 950 MB, so the six images need about 6 GB of the 10 GB repository limit for each branch, and `master` plus one active pull request will cause evictions. The cache stays as planned until hosted runs measure it.
+- A local image ID depends on Docker's image store: Docker Desktop's containerd store uses the manifest digest, the classic store the config digest. PLATFORMS.md now lists each image's config digest, which is the same in both, for comparing hosted and local builds.
+- The cleanup step now removes libpng's `libpng-config` and `libpng16-config`, found during Task 5, and `validate_image.py`'s build-config check flags any `*-config` script in `/opt/vfx/bin` other than NumPy's `numpy-config`.
+
+Affected areas:
+
+- The workflow, the Dockerfile's cleanup step, `build/docker-build-tools.json`, `scripts/validate_lock.py`, `scripts/validate_image.py`, BUILD_ENVIRONMENT.md, PLATFORMS.md, the mission, the Phase 4 plan, the roadmap, and this log.
+
+Validation:
+
+- `validate_lock.py` passes, and also passes with `py_compile` in an `ubuntu:24.04` container under its Python 3.12.3, as the lock job runs them.
+- `actionlint` 1.7.7 reports no errors in the workflow.
+- Copies of the repository with a deliberately broken workflow each fail `validate_lock.py` with their own message: an action pinned by tag, a different BuildKit digest, a different Buildx version, a missing year, and `contents: write`.
+- The image job's commands, run locally for CY2026 arm64 without the GitHub cache, built the image and passed all 48 validation and 33 smoke checks, and wrote 12 artifact files with their hashes.
+- The extended build-config check fails on the Task 5 CY2026 arm64 image, naming both libpng scripts.
+- A CY2026 arm64 image with CY2027's `cjpeg` added, linked against glibc 2.34, fails the glibc symbol-limit check (`GLIBC_2.34` against the 2.28 floor) and the linkage check.
+- After the libpng change, cold pairs for all six images again match on shipped binaries, the full filesystem, layers, config digest, and image ID, and each passes all 48 validation and 33 smoke checks. Each image has two fewer files. The cold CY2026 arm64 image has the same ID as an earlier cached build of it. Image IDs and config digests are in PLATFORMS.md.
+- The amd64 images were built and checked under emulation on an arm64 host.
+
+Follow-up:
+
+- Steps 6 and 7 need the branch pushed: measure hosted durations and cache use, record a passing hosted run of all six image jobs, and record a manual cold-reproducibility run. That run will show whether native amd64 builds match the emulated config digests.
+- The plan's completion evidence asks for CI to fail on a bad checksum, a version mismatch, a missing capability, a glibc limit violation, and a size overrun. The same commands fail on each locally; a hosted demonstration needs deliberately broken pushes.
+
 ## 2026-11-07: Make Builds Reproducible (Phase 4 Task 5)
 
 Request:
