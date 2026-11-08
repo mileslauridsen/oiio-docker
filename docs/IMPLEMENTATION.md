@@ -2,6 +2,32 @@
 
 Record decisions that change project direction, specifications, runtime behavior, tests, validation, dependencies, deployment, or architecture. Link to plans rather than duplicating their details.
 
+## 2026-11-08: Confirm Hosted Reproducibility And Complete Phase 4
+
+Request:
+
+- Merge pull request #2, push `master`, and start the cold-reproducibility job manually once the `master` run finishes.
+
+Decision:
+
+- `master` was fast-forwarded locally from `24ece62` to `876acf8` and pushed, so the branch's signed commits reached `master` unchanged and GitHub marked pull request #2 merged.
+- Phase 4 is complete. The completion evidence also asks for CI to fail on a bad checksum, a version mismatch, a missing capability, a glibc limit violation, and a size overrun. Those failures were shown locally with the same commands CI runs (Tasks 1, 3, 4, and 6), and every hosted lock job repeats the checksum and signature rejections, but no deliberately failing hosted run was recorded.
+
+Affected areas:
+
+- The Phase 4 plan, the roadmap, BUILD_ENVIRONMENT.md, the README, and this log.
+
+Validation:
+
+- Push run [42447599869](https://github.com/mileslauridsen/oiio-docker/actions/runs/42447599869) on `master` passed the lock check and all six image jobs, in 10–21 minutes each.
+- Manual run [42452397732](https://github.com/mileslauridsen/oiio-docker/actions/runs/42452397732) passed the lock check, all six image jobs, and all six cold-reproducibility jobs. The reproducibility jobs took 20m 48s (CY2025 arm64), 25m 11s (CY2027 amd64), 27m 10s (CY2027 arm64), 28m 38s (CY2026 arm64), 30m 30s (CY2025 amd64), and 38m 30s (CY2026 amd64), within the 120-minute timeout.
+- Each reproducibility report matches between its two builds on shipped binaries (134–138), the full filesystem (6,907–10,319 entries), layer diff IDs, config digest, and image ID, with a creation time of 1970-01-01. Every config digest equals the local one in PLATFORMS.md, and on the runners each image ID equals its config digest.
+
+Follow-up:
+
+- The weekly schedule runs the cold pairs every Monday at 07:41 UTC.
+- The Rocky `vault` fallback for superseded RPMs remains unexercised.
+
 ## 2026-11-08: Confirm The Hosted Image Jobs And Drop The CI Cache (Phase 4 Task 6)
 
 Request:

@@ -53,6 +53,8 @@ It generates test images without OIIO and checks every format round trip, `maket
 
 Builds are reproducible: two cold builds of a year produce the same image. `scripts/reproducible_build.py` checks this ([docs/BUILD_ENVIRONMENT.md](docs/BUILD_ENVIRONMENT.md#reproducible-builds)).
 
+GitHub Actions runs these checks for every year on native amd64 and arm64 runners on each pull request and push to `master`, and the cold reproducibility pairs weekly ([docs/BUILD_ENVIRONMENT.md](docs/BUILD_ENVIRONMENT.md#continuous-integration)).
+
 ## Project documentation
 
 - [Platforms](docs/PLATFORMS.md): the supported years, their verified versions, and annual maintenance.

@@ -221,8 +221,9 @@ Steps:
 - [x] 5. Upload the following as per-job artifacts: the lock files, Buildx metadata, validation and smoke-test results, artifact hashes, and image sizes.
 - [x] 6. Measure job durations and cache use. Adjust cache scope or mode, or set timeouts, from evidence.
   - The first hosted run took 12–21 minutes per cold image job and 4 seconds for the lock check. Image jobs now time out after 60 minutes and cold-reproducibility jobs after 120. With no layer cache, the repository's cache holds only Buildx's downloaded binary.
-- [ ] 7. After the user pushes the branch, confirm a hosted run passes. Separately, confirm a manual run of the cold-reproducibility job.
-  - The pull request's hosted run passed: run [42443815901](https://github.com/mileslauridsen/oiio-docker/actions/runs/42443815901). The manual cold-reproducibility run remains.
+- [x] 7. After the user pushes the branch, confirm a hosted run passes. Separately, confirm a manual run of the cold-reproducibility job.
+  - The pull request's hosted run passed: run [42443815901](https://github.com/mileslauridsen/oiio-docker/actions/runs/42443815901). After the merge, the push run [42447599869](https://github.com/mileslauridsen/oiio-docker/actions/runs/42447599869) and the manual run [42452397732](https://github.com/mileslauridsen/oiio-docker/actions/runs/42452397732) passed; the manual run's six cold-reproducibility jobs matched on every comparison.
+  - The failure paths in the completion evidence were exercised locally with the same commands CI runs, and every hosted lock job repeats the checksum and signature rejections. No deliberately failing hosted run was recorded.
 
 Completion evidence: a recorded hosted run in which all six image jobs pass, and a recorded manual cold-reproducibility run. CI fails on an invalid checksum, a version mismatch, a missing capability, a glibc limit violation, and a size overrun.
 
@@ -249,13 +250,13 @@ Completion evidence: a recorded hosted run in which all six image jobs pass, and
 
 ## Status
 
-Status: in progress.
+Status: complete.
 
 - Task 1 is complete; see [SOURCE_PROVENANCE.md](../SOURCE_PROVENANCE.md) and the [implementation log](../IMPLEMENTATION.md).
 - Task 2 is complete; see [BUILD_ENVIRONMENT.md](../BUILD_ENVIRONMENT.md). Locked RPMs install from each year's Rocky minor release, with a `vault` fallback that has not yet been exercised.
 - Task 3 is complete; see [IMAGE_SUPPORT.md](../IMAGE_SUPPORT.md). Every year and architecture passes `smoke_images.py`, and OIIO's formats outside the contract are disabled.
 - Task 4 is complete. `validate_image.py` runs 48 checks, including contents, stripping, and the shipped license files ([SOURCE_PROVENANCE.md](../SOURCE_PROVENANCE.md#shipped-licenses)), and fails on a version mismatch, a missing library, a leftover compiler, and a size overrun.
 - Task 5 is complete; see [BUILD_ENVIRONMENT.md](../BUILD_ENVIRONMENT.md#reproducible-builds). Local cold pairs for all six images match on shipped binaries, the full filesystem, layers, config digest, and image ID. The amd64 pairs ran under emulation.
-- Task 6 is in progress: hosted run [42443815901](https://github.com/mileslauridsen/oiio-docker/actions/runs/42443815901) on pull request #2 passed the lock check and all six image jobs, with config digests matching the local builds. The manual cold-reproducibility run waits for the merge.
+- Task 6 is complete; see [BUILD_ENVIRONMENT.md](../BUILD_ENVIRONMENT.md#continuous-integration). Hosted runs on the pull request, on `master`, and a manual run passed. The manual run's cold pairs match on every comparison for all six images, with the same config digests as the local builds, so native amd64 builds match the emulated ones. The CI cache was dropped after it was found never to activate. Failure paths were shown locally, not in a deliberately failing hosted run.
 
-Last updated: 2026-11-07
+Last updated: 2026-11-08
