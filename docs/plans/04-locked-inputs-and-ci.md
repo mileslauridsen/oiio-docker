@@ -18,7 +18,7 @@ Make every reference-platform image traceable to exact inputs, and verify it aut
   - per-platform size budgets;
   - `.github/workflows/ci.yml`, which runs cached builds on native amd64 and arm64 runners, plus weekly cold reproducibility builds.
 - Its hosted push workflow passed on both architectures. Its scheduled cold-reproducibility job has not run yet.
-- This repository is kept local for now. Hosted CI runs only once a branch is pushed to GitHub.
+- This repository is on GitHub, and hosted CI runs on every pull request and push to `master`.
 
 ## Decisions And Boundaries
 
@@ -57,7 +57,7 @@ Make every reference-platform image traceable to exact inputs, and verify it aut
 **CI scope**
 
 - CI covers the full year-by-architecture matrix: 6 image jobs.
-- Watch build minutes and the default 10 GB repository cache limit for GitHub Actions. Narrow the cache, not the matrix, if the limit is exceeded.
+- Image jobs build without a layer cache (see Task 6). If build minutes become a problem, add a cache rather than narrowing the matrix.
 - Registry publication, image signing and attestations, and release automation remain out of scope.
 
 ## Execution Order
